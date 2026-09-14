@@ -672,6 +672,21 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       vo2Rhr30d = (vo2Rhr30d * 1.228).clamp(58.0, 68.0);
     }
 
+    final maxHrAllTime = await _db.healthRecordDao.getMaxExerciseHr(
+      start: DateTime(2000),
+      end: now,
+    );
+    final allTimeRhrs = await _db.healthRecordDao.getDailyRestingHeartRates(null);
+    double rhrAllTime = rhr30d;
+    if (allTimeRhrs.isNotEmpty) {
+      final sortedRhr = allTimeRhrs.map((p) => p.value).toList()..sort();
+      rhrAllTime = sortedRhr[sortedRhr.length ~/ 2];
+    }
+    double vo2RhrAllTime = rhrAllTime;
+    if (vo2RhrAllTime < 56.0) {
+      vo2RhrAllTime = (vo2RhrAllTime * 1.228).clamp(58.0, 68.0);
+    }
+
     final vo2max7d = _computeVo2Max(
       restingHr7dBaseline: vo2Rhr7d,
       maxHrFromExercise: maxHr7d ?? maxHr30d ?? maxHr60d,
@@ -682,13 +697,20 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       maxHrFromExercise: maxHr30d ?? maxHr60d,
       userAge: userAge,
     );
+    final allTimeAvgVo2 = await _db.derivedMetricDao.getAllTimeAverageVo2Max();
+    final vo2maxAllTime = allTimeAvgVo2 ??
+        _computeVo2Max(
+          restingHr7dBaseline: vo2RhrAllTime,
+          maxHrFromExercise: maxHrAllTime ?? maxHr30d ?? maxHr60d,
+          userAge: userAge,
+        );
     final vo2max = vo2max7d;
 
-    // If historical records have legacy inflated VO2 values (> 48.0), asynchronously recompute history
+    // If historical records have legacy inflated VO2 values (> 48.0), recompute history
     final avg7 = await _db.derivedMetricDao.getAverageVo2Max(7);
     if ((avg7 != null && avg7 > 48.0) ||
         (metric?.estimatedVo2Max != null && metric!.estimatedVo2Max! > 48.0)) {
-      recomputeHistory(days: 30);
+      await recomputeHistory(days: 30);
     }
 
     // Persist today's live computed metric to SQLite so historical records are immediately up-to-date
@@ -713,6 +735,7 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       estimatedVo2Max: vo2max,
       estimatedVo2Max7d: vo2max7d,
       estimatedVo2Max30d: vo2max30d,
+      estimatedVo2MaxAllTime: vo2maxAllTime,
       restingHr: todayRhr ?? baseline?.restingHrBaseline7d,
       baselineRestingHr: rhrBaseline,
       sleepHours: actualSleepHours ??
