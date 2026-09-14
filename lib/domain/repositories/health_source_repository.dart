@@ -134,6 +134,7 @@ class DerivedMetricSummary {
   final double? estimatedVo2Max;
   final double? estimatedVo2Max7d;
   final double? estimatedVo2Max30d;
+  final double? estimatedVo2MaxAllTime;
   final double? restingHr;
   final double? baselineRestingHr;
   final double? sleepHours;
@@ -169,6 +170,7 @@ class DerivedMetricSummary {
     this.estimatedVo2Max,
     this.estimatedVo2Max7d,
     this.estimatedVo2Max30d,
+    this.estimatedVo2MaxAllTime,
     this.restingHr,
     this.baselineRestingHr,
     this.sleepHours,
