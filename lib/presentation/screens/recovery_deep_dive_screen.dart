@@ -120,19 +120,49 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
       double? hrRest;
       if (_selectedMetric == CardioMetric.vo2Max) {
         final now = DateTime.now();
-        final windowStart = now.subtract(const Duration(days: 60));
+        DateTime windowStart;
+        if (_selectedPeriod == Vo2Period.sevenDays) {
+          windowStart = now.subtract(const Duration(days: 7));
+        } else if (_selectedPeriod == Vo2Period.thirtyDays) {
+          windowStart = now.subtract(const Duration(days: 30));
+        } else {
+          // All time: look back across all records
+          windowStart = DateTime(2000);
+        }
+
         hrMax = await db.healthRecordDao.getMaxExerciseHr(
           start: windowStart,
           end: now,
         );
-        hrRest = widget.summary?.baselineRestingHr ?? widget.summary?.restingHr;
-        if (hrRest == null) {
-          final todayStart = DateTime(now.year, now.month, now.day);
-          hrRest = await db.healthRecordDao.getTodayRestingHr(
-            start: todayStart,
+        if (hrMax == null && _selectedPeriod != Vo2Period.allTime) {
+          hrMax = await db.healthRecordDao.getMaxExerciseHr(
+            start: DateTime(2000),
             end: now,
           );
         }
+
+        final todayStart = DateTime(now.year, now.month, now.day);
+        final baseline = await db.baselineDao.getBaseline(todayStart);
+
+        if (_selectedPeriod == Vo2Period.sevenDays) {
+          hrRest = baseline?.restingHrBaseline7d ?? widget.summary?.baselineRestingHr;
+        } else if (_selectedPeriod == Vo2Period.thirtyDays) {
+          hrRest = baseline?.restingHrBaseline30d ?? baseline?.restingHrBaseline7d ?? widget.summary?.baselineRestingHr;
+        } else {
+          // All time: use all-time daily resting HR median if available, else 30d baseline
+          final allRhrs = await db.healthRecordDao.getDailyRestingHeartRates(null);
+          if (allRhrs.isNotEmpty) {
+            final sorted = allRhrs.map((p) => p.value).toList()..sort();
+            hrRest = sorted[sorted.length ~/ 2];
+          } else {
+            hrRest = baseline?.restingHrBaseline30d ?? widget.summary?.baselineRestingHr ?? widget.summary?.restingHr;
+          }
+        }
+
+        hrRest ??= await db.healthRecordDao.getTodayRestingHr(
+          start: todayStart,
+          end: now,
+        );
         // In the Uth-Sørensen VO2 max formula, HRrest must be the awake resting HR.
         // If baseline reflects nocturnal sleep dips (< 56 bpm), calibrate to awake RHR.
         if (hrRest != null && hrRest < 56.0) {
@@ -258,8 +288,29 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
     final score = widget.summary?.recoveryScore;
     final tier = RecoveryTier.fromScore(score);
 
-    // Current displayed headline value (use latest if available, else average)
-    final headlineValue = _latest ?? _average;
+    // Current displayed headline value (use period-specific estimated VO2 max when applicable, else average or latest)
+    double? headlineValue;
+    if (_selectedMetric == CardioMetric.vo2Max) {
+      if (_selectedPeriod == Vo2Period.sevenDays) {
+        headlineValue = widget.summary?.estimatedVo2Max7d ??
+            (_calcHrRest > 0 ? (15.3 * (_calcHrMax / _calcHrRest)).clamp(15.0, 85.0) : null) ??
+            _average ??
+            _latest;
+      } else if (_selectedPeriod == Vo2Period.thirtyDays) {
+        headlineValue = widget.summary?.estimatedVo2Max30d ??
+            (_calcHrRest > 0 ? (15.3 * (_calcHrMax / _calcHrRest)).clamp(15.0, 85.0) : null) ??
+            _average ??
+            _latest;
+      } else {
+        headlineValue = widget.summary?.estimatedVo2MaxAllTime ??
+            (_calcHrRest > 0 ? (15.3 * (_calcHrMax / _calcHrRest)).clamp(15.0, 85.0) : null) ??
+            _average ??
+            widget.summary?.estimatedVo2Max ??
+            _latest;
+      }
+    } else {
+      headlineValue = _latest ?? _average;
+    }
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -824,6 +875,12 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
     if (_selectedMetric == CardioMetric.vo2Max) {
       final ratio = _calcHrRest > 0 ? (_calcHrMax / _calcHrRest) : 3.63;
       final computed = (15.3 * ratio).clamp(15.0, 85.0);
+      final hrMaxSubtitle = _selectedPeriod == Vo2Period.allTime
+          ? 'All-Time Peak'
+          : (_selectedPeriod == Vo2Period.thirtyDays ? '30D Peak' : 'Recent Peak');
+      final hrRestSubtitle = _selectedPeriod == Vo2Period.allTime
+          ? 'All-Time RHR'
+          : (_selectedPeriod == Vo2Period.thirtyDays ? '30D Baseline' : '7D Baseline');
 
       return Container(
         width: double.infinity,
@@ -917,9 +974,9 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
             // Variables chips
             Row(
               children: [
-                _calcChip('HRmax', '${_calcHrMax.toStringAsFixed(0)} bpm', 'Recent Run'),
+                _calcChip('HRmax', '${_calcHrMax.toStringAsFixed(0)} bpm', hrMaxSubtitle),
                 const SizedBox(width: 6),
-                _calcChip('HRrest', '${_calcHrRest.toStringAsFixed(1)} bpm', 'Awake RHR'),
+                _calcChip('HRrest', '${_calcHrRest.toStringAsFixed(1)} bpm', hrRestSubtitle),
                 const SizedBox(width: 6),
                 _calcChip('Factor', '15.3', 'Clinical Ratio'),
               ],
