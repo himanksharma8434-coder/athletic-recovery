@@ -1,0 +1,428 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Strain &amp; Workout Performance</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600;700&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-fixed-variant": "#7a3000",
+            "surface-container": "#1f1f23",
+            "inverse-on-surface": "#2f3034",
+            "surface-container-low": "#1b1b1f",
+            "on-surface": "#e3e2e6",
+            "on-tertiary-fixed": "#351000",
+            "on-error": "#690005",
+            "background": "#121316",
+            "outline": "#849587",
+            "secondary": "#a5e7ff",
+            "inverse-surface": "#e3e2e6",
+            "on-background": "#e3e2e6",
+            "on-tertiary-container": "#993d00",
+            "on-secondary-fixed-variant": "#004e60",
+            "on-error-container": "#ffdad6",
+            "on-tertiary": "#561f00",
+            "tertiary-fixed-dim": "#ffb693",
+            "tertiary-container": "#ffc5ab",
+            "primary-fixed": "#58ffa5",
+            "tertiary-fixed": "#ffdbcc",
+            "surface-container-high": "#292a2d",
+            "on-secondary-fixed": "#001f28",
+            "tertiary": "#ffeae1",
+            "outline-variant": "#3b4a3f",
+            "secondary-fixed": "#b6ebff",
+            "surface-bright": "#38393d",
+            "on-secondary": "#003543",
+            "primary-fixed-dim": "#00e388",
+            "on-surface-variant": "#bacbbc",
+            "on-primary-fixed": "#00210f",
+            "on-secondary-container": "#00566a",
+            "surface-variant": "#343538",
+            "on-primary": "#00391e",
+            "primary-container": "#00f090",
+            "surface-dim": "#121316",
+            "inverse-primary": "#006d3e",
+            "secondary-container": "#00d2ff",
+            "error-container": "#93000a",
+            "primary": "#b4ffcb",
+            "surface": "#121316",
+            "on-primary-container": "#00683b",
+            "on-primary-fixed-variant": "#00522e",
+            "surface-tint": "#00e388",
+            "surface-container-highest": "#343538",
+            "error": "#ffb4ab",
+            "surface-container-lowest": "#0d0e11",
+            "secondary-fixed-dim": "#47d6ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-2xs": "0.125rem",
+            "gutter": "0.75rem",
+            "margin-sm": "0.75rem",
+            "gutter-compact": "0.5rem",
+            "space-md": "0.75rem",
+            "space-lg": "1rem",
+            "margin": "1rem",
+            "space-sm": "0.5rem",
+            "space-xl": "1.5rem",
+            "space-2xl": "2rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "label-sm": ["Inter"],
+            "body-md": ["Inter"],
+            "label-caps": ["JetBrains Mono"],
+            "label-data": ["JetBrains Mono"],
+            "body-sm": ["Inter"],
+            "display-hero": ["Space Grotesk"],
+            "headline-lg": ["Inter"],
+            "headline-metric": ["Space Grotesk"],
+            "headline-metric-mobile": ["Space Grotesk"],
+            "body-lg": ["Inter"],
+            "display-hero-mobile": ["Space Grotesk"],
+            "headline-sm": ["Inter"],
+            "headline-md": ["Inter"]
+          },
+          "fontSize": {
+            "label-sm": ["11px", {"lineHeight": "14px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+            "body-md": ["13px", {"lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400"}],
+            "label-caps": ["10px", {"lineHeight": "14px", "letterSpacing": "0.08em", "fontWeight": "600"}],
+            "label-data": ["13px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+            "body-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400"}],
+            "display-hero": ["56px", {"lineHeight": "60px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+            "headline-lg": ["24px", {"lineHeight": "30px", "letterSpacing": "-0.015em", "fontWeight": "600"}],
+            "headline-metric": ["36px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+            "headline-metric-mobile": ["30px", {"lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+            "body-lg": ["15px", {"lineHeight": "22px", "letterSpacing": "0", "fontWeight": "400"}],
+            "display-hero-mobile": ["44px", {"lineHeight": "48px", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+            "headline-sm": ["16px", {"lineHeight": "22px", "letterSpacing": "0", "fontWeight": "600"}],
+            "headline-md": ["20px", {"lineHeight": "26px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .kinetic-glow {
+      box-shadow: 0 0 36px -6px rgba(255, 107, 0, 0.35);
+    }
+    .kinetic-glow-subtle {
+      box-shadow: 0 0 20px -4px rgba(255, 107, 0, 0.22);
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased min-h-screen flex justify-center selection:bg-on-tertiary-fixed selection:text-tertiary">
+<!-- Mobile Container Context (390px simulated) -->
+<main class="w-full max-w-[390px] min-h-screen bg-surface-container-lowest relative flex flex-col pb-32">
+<!-- TopAppBar Anchor from Shared Components -->
+<header class="flex justify-between items-center w-full px-4 h-14 max-w-md mx-auto fixed top-0 left-0 right-0 z-40 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl shadow-none">
+<div class="flex items-center space-x-space-sm">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/30 flex items-center justify-center bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Close up athletic portrait of a focused endurance runner with subtle dark studio lighting, high contrast carbon skin tones and futuristic biometric sensor on temple with deep black ambient tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1ZE0JfoPVOUevXyPA4HOcNzHfPT8qKm8iuRYYc1gPX0JLghtnhW_bNq5ONIVeZWDIpF2aO39Bu5DkWJgcYMD9Snnv2ibDN1fva6fHEd83MHZH4PU1Ryf1LohFgg5Y5kaJKviWcMWtOgGs468aLEqEs7rMNW05kwOzjk54ZQeRCyRH0WTilbJVWIDf8YY94A92hbCQZ41IJ3kJCszBJnPpBPxl5Ru6wut29r6cjmvpGRg76-kODoou">
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm-mobile font-semibold tracking-tight text-on-surface">TODAY</span>
+<div class="flex items-center space-x-1">
+<span class="w-1.5 h-1.5 rounded-full bg-[#FF6B00] animate-pulse"></span>
+<span class="font-label-caps text-label-caps text-[#FF6B00] tracking-wider">LOGGING LIVE</span>
+</div>
+</div>
+</div>
+<div class="flex items-center space-x-space-sm">
+<div class="flex items-center space-x-1 px-2 py-1 rounded-full bg-surface-container border border-outline-variant/30">
+<span class="material-symbols-outlined text-[#FF6B00] text-sm" style="font-variation-settings: 'FILL' 1;">sensors</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">SYNCED</span>
+</div>
+</div>
+</header>
+<!-- Main Scrollable Canvas Content -->
+<div class="pt-16 px-4 space-y-space-xl flex-1">
+<!-- Hero Strain Visualizer Component -->
+<section class="mt-2 bg-[#111318]/90 border border-white/[0.06] rounded-xl p-space-lg relative overflow-hidden backdrop-blur-md">
+<div class="absolute -top-16 -right-16 w-44 h-44 bg-[#FF6B00]/5 rounded-full blur-3xl pointer-events-none"></div>
+<!-- Gauge & Headline Cluster -->
+<div class="flex flex-col items-center justify-center relative py-1">
+  <!-- SVG Circular Arc (220px) with Precision Dial -->
+  <div class="relative w-[220px] h-[220px] flex items-center justify-center">
+    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 220 220">
+      <!-- Subtle outer tick ring -->
+      <circle cx="110" cy="110" fill="transparent" r="100" stroke="rgba(255, 255, 255, 0.04)" stroke-dasharray="2 8" stroke-width="1"></circle>
+      <!-- Recessed Track -->
+      <circle cx="110" cy="110" fill="transparent" r="90" stroke="rgba(255, 255, 255, 0.05)" stroke-width="3"></circle>
+      <!-- Target Sector Guideline Indicator -->
+      <circle cx="110" cy="110" fill="transparent" r="90" stroke="rgba(255, 107, 0, 0.25)" stroke-dasharray="100 565" stroke-dashoffset="-360" stroke-linecap="round" stroke-width="3"></circle>
+      <!-- Ultra-precise active strain arc -->
+      <circle class="filter drop-shadow-[0_0_10px_rgba(255,107,0,0.45)]" cx="110" cy="110" fill="transparent" r="90" stroke="#FF6B00" stroke-dasharray="398 565" stroke-linecap="round" stroke-width="3.5"></circle>
+    </svg>
+    <!-- Center Telemetry Readout -->
+    <div class="absolute flex flex-col items-center text-center">
+      <span class="font-label-caps text-[10px] text-on-surface-variant/70 tracking-[0.2em] uppercase font-mono">DAY STRAIN</span>
+      <div class="flex items-baseline justify-center mt-1">
+        <span class="font-display-hero-mobile text-[46px] font-light text-white tracking-tighter leading-none font-mono">14.8</span>
+        <span class="font-label-data text-xs text-on-surface-variant/50 ml-1.5 font-mono">/ 21.0</span>
+      </div>
+      <div class="mt-2.5 flex items-center bg-[#FF6B00]/10 border border-[#FF6B00]/25 px-2.5 py-0.5 rounded-full">
+        <span class="w-1 h-1 rounded-full bg-[#FF6B00] mr-1.5 shadow-[0_0_4px_#FF6B00]"></span>
+        <span class="font-label-caps text-[9px] text-[#FF6B00] tracking-widest font-mono">TARGET REACHED · 13.5–16.0</span>
+      </div>
+    </div>
+  </div>
+  <!-- Secondary Telemetry Row -->
+  <div class="grid grid-cols-3 w-full mt-3 pt-3 border-t border-white/[0.04] divide-x divide-white/[0.04] text-center">
+    <div class="flex flex-col items-center px-1">
+      <span class="font-label-caps text-[10px] text-on-surface-variant/70 tracking-wider uppercase font-mono">EST. BURN</span>
+      <span class="font-headline-sm text-sm font-medium text-white mt-0.5 font-mono">2,420</span>
+      <span class="font-label-data text-[10px] text-on-surface-variant/50 font-mono">kcal</span>
+    </div>
+    <div class="flex flex-col items-center px-1">
+      <span class="font-label-caps text-[10px] text-on-surface-variant/70 tracking-wider uppercase font-mono">AVG HR</span>
+      <span class="font-headline-sm text-sm font-medium text-white mt-0.5 font-mono">128</span>
+      <span class="font-label-data text-[10px] text-on-surface-variant/50 font-mono">bpm</span>
+    </div>
+    <div class="flex flex-col items-center px-1">
+      <span class="font-label-caps text-[10px] text-on-surface-variant/70 tracking-wider uppercase font-mono">MAX HR</span>
+      <span class="font-headline-sm text-sm font-medium text-[#FF6B00] mt-0.5 font-mono">178</span>
+      <span class="font-label-data text-[10px] text-[#FF6B00]/60 font-mono">bpm</span>
+    </div>
+  </div>
+</div>
+</section>
+<!-- Real-time Strain Coaching Bar Component -->
+<section class="bg-surface-container rounded-xl p-space-md border border-outline-variant/30 flex items-center space-x-3">
+<div class="w-9 h-9 rounded-lg bg-[#FF6B00]/15 flex items-center justify-center flex-shrink-0 text-[#FF6B00] border border-[#FF6B00]/30">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">insights</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-label-caps text-label-caps text-[#FF6B00] uppercase tracking-wider">COACHING ADVICE</p>
+<p class="font-body-sm text-body-sm text-on-surface leading-tight mt-0.5 truncate">
+            Strain capacity available: <span class="text-white font-semibold">2.2</span> until overreaching zone.
+          </p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-base">chevron_right</span>
+</section>
+<!-- HR Zone Distribution Stacked Meters -->
+<section class="bg-[#111318]/90 border border-white/[0.06] rounded-xl p-space-lg space-y-3 backdrop-blur-md">
+<div class="flex justify-between items-center pb-1 border-b border-white/[0.04]">
+  <div class="flex items-center space-x-2">
+    <span class="material-symbols-outlined text-[#FF6B00] text-sm">ecg_heart</span>
+    <span class="font-label-caps text-[10px] text-on-surface-variant/80 uppercase tracking-widest font-mono">HR ZONE BREAKDOWN</span>
+  </div>
+  <span class="font-label-caps text-[10px] text-on-surface-variant/60 font-mono tracking-wider">1H 26M TOTAL</span>
+</div>
+<div class="space-y-2 pt-0.5">
+  <!-- Zone 5 (Peak 90-100%) -->
+  <div class="space-y-1">
+    <div class="flex justify-between items-center text-xs">
+      <div class="flex items-center space-x-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-[#FF3B56]"></span>
+        <span class="font-label-data text-xs text-white font-medium font-mono">Zone 5</span>
+        <span class="font-body-sm text-[11px] text-on-surface-variant/60 font-mono">Peak 90–100%</span>
+      </div>
+      <div class="flex items-center space-x-2 font-label-data text-xs font-mono">
+        <span class="text-white font-medium">8m</span>
+        <span class="text-on-surface-variant/50 w-7 text-right">9%</span>
+      </div>
+    </div>
+    <div class="w-full bg-white/[0.04] h-1 rounded-full overflow-hidden">
+      <div class="bg-[#FF3B56] h-full rounded-full" style="width: 9%"></div>
+    </div>
+  </div>
+  <!-- Zone 4 (Threshold 80-90%) -->
+  <div class="space-y-1">
+    <div class="flex justify-between items-center text-xs">
+      <div class="flex items-center space-x-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-[#FF6B00]"></span>
+        <span class="font-label-data text-xs text-white font-medium font-mono">Zone 4</span>
+        <span class="font-body-sm text-[11px] text-on-surface-variant/60 font-mono">Threshold 80–90%</span>
+      </div>
+      <div class="flex items-center space-x-2 font-label-data text-xs font-mono">
+        <span class="text-white font-medium">24m</span>
+        <span class="text-on-surface-variant/50 w-7 text-right">28%</span>
+      </div>
+    </div>
+    <div class="w-full bg-white/[0.04] h-1 rounded-full overflow-hidden">
+      <div class="bg-[#FF6B00] h-full rounded-full" style="width: 28%"></div>
+    </div>
+  </div>
+  <!-- Zone 3 (Aerobic 70-80%) -->
+  <div class="space-y-1">
+    <div class="flex justify-between items-center text-xs">
+      <div class="flex items-center space-x-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-[#00d2ff]"></span>
+        <span class="font-label-data text-xs text-white font-medium font-mono">Zone 3</span>
+        <span class="font-body-sm text-[11px] text-on-surface-variant/60 font-mono">Aerobic 70–80%</span>
+      </div>
+      <div class="flex items-center space-x-2 font-label-data text-xs font-mono">
+        <span class="text-white font-medium">32m</span>
+        <span class="text-on-surface-variant/50 w-7 text-right">38%</span>
+      </div>
+    </div>
+    <div class="w-full bg-white/[0.04] h-1 rounded-full overflow-hidden">
+      <div class="bg-[#00d2ff] h-full rounded-full" style="width: 38%"></div>
+    </div>
+  </div>
+  <!-- Zone 2 (Fat Burn 60-70%) -->
+  <div class="space-y-1">
+    <div class="flex justify-between items-center text-xs">
+      <div class="flex items-center space-x-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-[#00F090]"></span>
+        <span class="font-label-data text-xs text-white font-medium font-mono">Zone 2</span>
+        <span class="font-body-sm text-[11px] text-on-surface-variant/60 font-mono">Fat Burn 60–70%</span>
+      </div>
+      <div class="flex items-center space-x-2 font-label-data text-xs font-mono">
+        <span class="text-white font-medium">18m</span>
+        <span class="text-on-surface-variant/50 w-7 text-right">21%</span>
+      </div>
+    </div>
+    <div class="w-full bg-white/[0.04] h-1 rounded-full overflow-hidden">
+      <div class="bg-[#00F090] h-full rounded-full" style="width: 21%"></div>
+    </div>
+  </div>
+  <!-- Zone 1 (Active Rest 50-60%) -->
+  <div class="space-y-1">
+    <div class="flex justify-between items-center text-xs">
+      <div class="flex items-center space-x-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+        <span class="font-label-data text-xs text-white font-medium font-mono">Zone 1</span>
+        <span class="font-body-sm text-[11px] text-on-surface-variant/60 font-mono">Active Rest 50–60%</span>
+      </div>
+      <div class="flex items-center space-x-2 font-label-data text-xs font-mono">
+        <span class="text-white font-medium">4m</span>
+        <span class="text-on-surface-variant/50 w-7 text-right">4%</span>
+      </div>
+    </div>
+    <div class="w-full bg-white/[0.04] h-1 rounded-full overflow-hidden">
+      <div class="bg-outline h-full rounded-full" style="width: 4%"></div>
+    </div>
+  </div>
+</div>
+</section>
+<!-- Recent Activity Bento Card -->
+<section class="bg-[#111318]/90 border border-white/[0.06] rounded-xl p-space-lg space-y-3 backdrop-blur-md">
+<div class="flex items-center justify-between">
+  <div class="flex items-center space-x-2.5">
+    <div class="w-7 h-7 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-[#FF6B00]">
+      <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">directions_bike</span>
+    </div>
+    <div>
+      <p class="font-headline-sm text-sm font-medium text-white leading-tight">Morning Threshold Cycling</p>
+      <p class="font-label-caps text-[10px] text-on-surface-variant/60 font-mono tracking-wider mt-0.5">07:15 AM · OUTDOOR RIDE</p>
+    </div>
+  </div>
+  <span class="px-2 py-0.5 rounded-full bg-[#FF6B00]/10 text-[#FF6B00] border border-[#FF6B00]/25 font-label-caps text-[10px] font-medium font-mono tracking-wide">
+    8.4 STRAIN
+  </span>
+</div>
+<!-- Telemetry Stats Bento Strip -->
+<div class="grid grid-cols-3 gap-2 bg-[#0B0D11]/90 p-2.5 rounded-lg border border-white/[0.04]">
+  <div class="flex flex-col">
+    <span class="font-label-caps text-[10px] text-on-surface-variant/60 font-mono">DURATION</span>
+    <span class="font-label-data text-xs text-white font-medium mt-0.5 font-mono">52m 14s</span>
+  </div>
+  <div class="flex flex-col">
+    <span class="font-label-caps text-[10px] text-on-surface-variant/60 font-mono">ENERGY</span>
+    <span class="font-label-data text-xs text-white font-medium mt-0.5 font-mono">620 kcal</span>
+  </div>
+  <div class="flex flex-col">
+    <span class="font-label-caps text-[10px] text-on-surface-variant/60 font-mono">AVG PACE</span>
+    <span class="font-label-data text-xs text-white font-medium mt-0.5 font-mono">28.4 km/h</span>
+  </div>
+</div>
+<!-- Elevation Profile & Route Map Hybrid Preview -->
+<div class="grid grid-cols-2 gap-2 pt-0.5">
+  <!-- Route Map Thumbnail -->
+  <div class="relative h-20 rounded-lg overflow-hidden border border-white/[0.06] bg-[#0B0D11]" data-location="Innsbruck">
+    <img class="w-full h-full object-cover opacity-85" data-alt="Top-down GPS satellite telemetry track visualization of a mountain cycling circuit route with glowing neon orange laser polyline path carved across dark minimalist topo elevation maps with deep slate terrain." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIlqKi0Tk2DWfZT0XVG_hIgUdHsnmB4RdzMaDDU3STzRbKC-2PZpYJrVw99dvo9pancq1nx1zYGgRvn5vtyu7wY6Sizf5kMWhdgL6AjR-44ZfCSaB38pyXPle53_B895xuJZy7aDRHxH7wett7bIZscgsk6uLOT_-tPboUqaBEluZPArjRuQ_QEYPLtJQLmq2IBUMUp9huUvqH7Y6swfmV086nykJAsmssBeoq1J_CJ4qwoHg_teTN">
+    <div class="absolute bottom-1.5 left-1.5 bg-[#08090C]/90 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-label-caps text-white flex items-center space-x-1 border border-white/[0.06]">
+      <span class="w-1 h-1 rounded-full bg-[#00F090]"></span>
+      <span class="font-mono text-[9px]">24.8 KM GPS</span>
+    </div>
+  </div>
+  <!-- Elevation Sparkline Inset -->
+  <div class="h-20 rounded-lg border border-white/[0.06] bg-[#0B0D11] p-2 flex flex-col justify-between">
+    <div class="flex justify-between text-[9px] font-label-caps text-on-surface-variant/70 font-mono">
+      <span class="">ELEVATION</span>
+      <span class="text-white font-medium">+482m</span>
+    </div>
+    <!-- Custom Mini Profile Line -->
+    <div class="w-full h-7 flex items-end space-x-0.5 px-0.5">
+      <div class="w-1/12 bg-white/15 h-1.5 rounded-t-xs"></div>
+      <div class="w-1/12 bg-white/20 h-2.5 rounded-t-xs"></div>
+      <div class="w-1/12 bg-white/25 h-3.5 rounded-t-xs"></div>
+      <div class="w-1/12 bg-[#FF6B00]/60 h-5 rounded-t-xs"></div>
+      <div class="w-1/12 bg-[#FF6B00]/85 h-6 rounded-t-xs"></div>
+      <div class="w-1/12 bg-[#FF6B00] h-7 rounded-t-xs shadow-[0_0_6px_rgba(255,107,0,0.5)]"></div>
+      <div class="w-1/12 bg-[#FF6B00]/80 h-6 rounded-t-xs"></div>
+      <div class="w-1/12 bg-[#FF6B00]/50 h-4 rounded-t-xs"></div>
+      <div class="w-1/12 bg-white/25 h-3 rounded-t-xs"></div>
+      <div class="w-1/12 bg-white/20 h-2 rounded-t-xs"></div>
+      <div class="w-1/12 bg-white/15 h-1.5 rounded-t-xs"></div>
+      <div class="w-1/12 bg-white/10 h-1.5 rounded-t-xs"></div>
+    </div>
+    <div class="flex justify-between text-[9px] font-label-data text-on-surface-variant/50 font-mono">
+      <span class="">0km</span>
+      <span class="">Peak</span>
+      <span class="">24km</span>
+    </div>
+  </div>
+</div>
+</section>
+<!-- Quick Action Button CTA -->
+<section class="pt-1"><button class="w-full py-3.5 px-4 bg-[#111318] hover:bg-[#1b1b1f] active:scale-[0.98] border border-white/[0.12] transition-all duration-150 rounded-xl text-white font-headline-sm text-sm font-medium flex items-center justify-center space-x-2 shadow-lg shadow-black/40 tracking-wide">
+<span class="material-symbols-outlined text-base text-[#FF6B00]" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+<span class="tracking-wider uppercase font-mono text-xs text-on-surface">Start Workout / Auto-Detect Activity</span>
+</button></section>
+</div>
+<!-- Floating BottomNavBar Component from Shared Components JSON -->
+<!-- Active Tab: Strain (Index 2 in label_texts: ["Pulse", "Recovery", "Strain", "Sleep", "Trends"]) -->
+<div class="fixed bottom-0 left-0 w-full z-50 flex justify-center items-center pb-6 px-4 pointer-events-none">
+<nav class="pointer-events-auto bg-surface-container-low/85 dark:bg-surface-container-low/85 backdrop-blur-2xl floating rounded-full mx-4 mb-4 border border-outline-variant/40 shadow-2xl shadow-surface-container-lowest/80 flex items-center px-2 py-1 space-x-1 max-w-sm w-full justify-between">
+<!-- Tab 1: Pulse (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant py-1 px-3 hover:text-primary dark:hover:text-primary transition-colors duration-150 active:scale-95" href="#pulse">
+<span class="material-symbols-outlined text-xl">vital_signs</span>
+<span class="text-label-caps font-label-caps text-[9px] mt-0.5">Pulse</span>
+</a>
+<!-- Tab 2: Recovery (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant py-1 px-3 hover:text-primary dark:hover:text-primary transition-colors duration-150 active:scale-95" href="#recovery">
+<span class="material-symbols-outlined text-xl">favorite</span>
+<span class="text-label-caps font-label-caps text-[9px] mt-0.5">Recovery</span>
+</a>
+<!-- Tab 3: Strain (ACTIVE - Aligned with Current Screen Intent & JSON tokens) -->
+<a class="flex flex-col items-center justify-center text-[#FF6B00] relative py-1 px-3 active:scale-95 transition-transform duration-150" href="#strain">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span class="text-label-caps font-label-caps text-[9px] font-semibold mt-0.5 text-[#FF6B00]">Strain</span>
+<!-- Active bioluminescent indicator dot -->
+<span class="w-1 h-1 rounded-full bg-[#FF6B00] shadow-[0_0_6px_#FF6B00] mt-0.5"></span>
+</a>
+<!-- Tab 4: Sleep (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant py-1 px-3 hover:text-primary dark:hover:text-primary transition-colors duration-150 active:scale-95" href="#sleep">
+<span class="material-symbols-outlined text-xl">bedtime</span>
+<span class="text-label-caps font-label-caps text-[9px] mt-0.5">Sleep</span>
+</a>
+<!-- Tab 5: Trends (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant py-1 px-3 hover:text-primary dark:hover:text-primary transition-colors duration-150 active:scale-95" href="#trends">
+<span class="material-symbols-outlined text-xl">monitoring</span>
+<span class="text-label-caps font-label-caps text-[9px] mt-0.5">Trends</span>
+</a>
+</nav>
+</div>
+</main>
+
+
+</body></html>

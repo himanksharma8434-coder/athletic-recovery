@@ -1,0 +1,526 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Sleep Architecture &amp; Circadian Rhythm</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Fonts: Space Grotesk & JetBrains Mono & Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-fixed-variant": "#7a3000",
+            "surface-container": "#1f1f23",
+            "inverse-on-surface": "#2f3034",
+            "surface-container-low": "#1b1b1f",
+            "on-surface": "#e3e2e6",
+            "on-tertiary-fixed": "#351000",
+            "on-error": "#690005",
+            "background": "#121316",
+            "outline": "#849587",
+            "secondary": "#a5e7ff",
+            "inverse-surface": "#e3e2e6",
+            "on-background": "#e3e2e6",
+            "on-tertiary-container": "#993d00",
+            "on-secondary-fixed-variant": "#004e60",
+            "on-error-container": "#ffdad6",
+            "on-tertiary": "#561f00",
+            "tertiary-fixed-dim": "#ffb693",
+            "tertiary-container": "#ffc5ab",
+            "primary-fixed": "#58ffa5",
+            "tertiary-fixed": "#ffdbcc",
+            "surface-container-high": "#292a2d",
+            "on-secondary-fixed": "#001f28",
+            "tertiary": "#ffeae1",
+            "outline-variant": "#3b4a3f",
+            "secondary-fixed": "#b6ebff",
+            "surface-bright": "#38393d",
+            "on-secondary": "#003543",
+            "primary-fixed-dim": "#00e388",
+            "on-surface-variant": "#bacbbc",
+            "on-primary-fixed": "#00210f",
+            "on-secondary-container": "#00566a",
+            "surface-variant": "#343538",
+            "on-primary": "#00391e",
+            "primary-container": "#00f090",
+            "surface-dim": "#121316",
+            "inverse-primary": "#006d3e",
+            "secondary-container": "#00d2ff",
+            "error-container": "#93000a",
+            "primary": "#b4ffcb",
+            "surface": "#121316",
+            "on-primary-container": "#00683b",
+            "on-primary-fixed-variant": "#00522e",
+            "surface-tint": "#00e388",
+            "surface-container-highest": "#343538",
+            "error": "#ffb4ab",
+            "surface-container-lowest": "#0d0e11",
+            "secondary-fixed-dim": "#47d6ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-2xs": "0.125rem",
+            "gutter": "0.75rem",
+            "margin-sm": "0.75rem",
+            "gutter-compact": "0.5rem",
+            "space-md": "0.75rem",
+            "space-lg": "1rem",
+            "margin": "1rem",
+            "space-sm": "0.5rem",
+            "space-xl": "1.5rem",
+            "space-2xl": "2rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "label-sm": ["Inter"],
+            "body-md": ["Inter"],
+            "label-caps": ["JetBrains Mono"],
+            "label-data": ["JetBrains Mono"],
+            "body-sm": ["Inter"],
+            "display-hero": ["Space Grotesk"],
+            "headline-lg": ["Inter"],
+            "headline-metric": ["Space Grotesk"],
+            "headline-metric-mobile": ["Space Grotesk"],
+            "body-lg": ["Inter"],
+            "display-hero-mobile": ["Space Grotesk"],
+            "headline-sm": ["Inter"],
+            "headline-md": ["Inter"]
+          },
+          "fontSize": {
+            "label-sm": ["11px", {"lineHeight": "14px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+            "body-md": ["13px", {"lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400"}],
+            "label-caps": ["10px", {"lineHeight": "14px", "letterSpacing": "0.08em", "fontWeight": "600"}],
+            "label-data": ["13px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+            "body-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400"}],
+            "display-hero": ["56px", {"lineHeight": "60px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+            "headline-lg": ["24px", {"lineHeight": "30px", "letterSpacing": "-0.015em", "fontWeight": "600"}],
+            "headline-metric": ["36px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+            "headline-metric-mobile": ["30px", {"lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+            "body-lg": ["15px", {"lineHeight": "22px", "letterSpacing": "0", "fontWeight": "400"}],
+            "display-hero-mobile": ["44px", {"lineHeight": "48px", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+            "headline-sm": ["16px", {"lineHeight": "22px", "letterSpacing": "0", "fontWeight": "600"}],
+            "headline-md": ["20px", {"lineHeight": "26px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #08090C;
+      color: #e3e2e6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      line-height: 1;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+    }
+    .glow-cyan {
+      box-shadow: 0 0 32px -8px rgba(0, 210, 255, 0.28);
+    }
+    .glow-indigo {
+      box-shadow: 0 0 24px -6px rgba(124, 77, 255, 0.25);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex justify-center bg-surface-container-lowest text-on-surface select-none pb-28">
+<!-- Mobile Frame Container (Strict 390px Max Canvas) -->
+<div class="w-full max-w-[390px] relative bg-[#08090C] flex flex-col min-h-screen overflow-x-hidden">
+<!-- TopAppBar (Anchored Header) -->
+<header class="bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30 flex justify-between items-center w-full px-4 h-14 max-w-md mx-auto fixed top-0 left-0 right-0 z-40">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container border border-outline-variant/40 flex items-center justify-center text-secondary-container">
+<span class="material-symbols-outlined text-[18px]">bedtime</span>
+</div>
+<div class="flex flex-col">
+<span class="text-headline-sm-mobile font-headline-sm font-semibold tracking-tight text-on-surface">SLEEP</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">OCT 23 - OCT 24</span>
+</div>
+</div>
+<div class="flex items-center gap-space-md text-on-surface-variant">
+<div class="flex items-center gap-1 bg-surface-container-low px-2 py-0.5 rounded border border-outline-variant/20 font-label-data text-label-data text-secondary">
+<span class="material-symbols-outlined text-[14px]">battery_charging_full</span>
+<span class="">98%</span>
+</div>
+<button class="active:scale-95 transition-transform duration-150 hover:bg-surface-container-high/40 text-on-surface p-1 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">sensors</span>
+</button>
+</div>
+</header>
+<!-- Content Canvas (Padded below header) -->
+<main class="flex-1 px-4 pt-20 flex flex-col gap-space-xl">
+<!-- Sleep Performance Score Card (Radial Dial Section) -->
+<section class="relative rounded-xl bg-[#111318] border border-white/10 p-space-lg flex flex-col items-center glow-cyan overflow-hidden"><!-- Subtle ambient aura -->
+<div class="absolute -top-20 left-1/2 -translate-x-1/2 w-64 h-64 bg-secondary-container/5 rounded-full blur-3xl pointer-events-none"></div>
+
+<!-- Header Pill & Status -->
+<div class="w-full flex justify-between items-center mb-6 z-10">
+  <div class="flex items-center gap-2">
+    <span class="w-1.5 h-1.5 rounded-full bg-secondary-container animate-pulse"></span>
+    <span class="font-label-caps text-[10px] text-on-surface-variant/80 uppercase tracking-widest">Circadian Synchronized</span>
+  </div>
+  <div class="px-2.5 py-0.5 rounded-full border border-secondary-container/20 bg-secondary-container/5 font-label-caps text-[9px] tracking-wider text-secondary-container font-medium">
+    RESTORED
+  </div>
+</div>
+
+<!-- Precision Machined Score Arc Dial -->
+<div class="relative w-[210px] h-[210px] flex items-center justify-center my-2">
+  <svg class="w-full h-full -rotate-90 transform" viewBox="0 0 210 210">
+    <!-- Quiet baseline track -->
+    <circle cx="105" cy="105" r="88" fill="transparent" stroke="rgba(255,255,255,0.04)" stroke-width="4"></circle>
+    <!-- Precision Tick Ring / Segmented Gauge Track -->
+    <circle cx="105" cy="105" r="88" fill="transparent" stroke="rgba(0, 210, 255, 0.12)" stroke-dasharray="2 6" stroke-width="4"></circle>
+    <!-- Active Precision Arc (92%) -->
+    <circle class="transition-all duration-1000 ease-out" cx="105" cy="105" r="88" fill="transparent" stroke="#7bd0ff" stroke-dasharray="552.92" stroke-dashoffset="44.23" stroke-linecap="round" stroke-width="5"></circle>
+    <!-- Micro Interior Orbit -->
+    <circle cx="105" cy="105" r="74" fill="transparent" stroke="rgba(123, 208, 255, 0.08)" stroke-width="1"></circle>
+  </svg>
+  <!-- Center Cluster -->
+  <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none">
+    <span class="font-label-caps text-[9px] text-on-surface-variant/60 tracking-[0.2em] uppercase mb-1.5 font-medium">SLEEP SCORE</span>
+    <div class="flex items-baseline justify-center">
+      <span class="font-display-hero-mobile text-[52px] leading-none text-white font-light tracking-tight">92</span>
+      <span class="text-[18px] text-secondary font-light ml-0.5">%</span>
+    </div>
+    <div class="mt-3 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-low border border-outline-variant/30 text-[10px] font-label-caps text-primary-fixed-dim tracking-wide">
+      <span class="material-symbols-outlined text-[11px]">arrow_upward</span>
+      <span class="">+4% VS BASELINE</span>
+    </div>
+  </div>
+</div>
+
+<!-- Telemetry Minimalist Metrics Split -->
+<div class="w-full grid grid-cols-2 gap-3 pt-5 mt-2 border-t border-white/[0.06]">
+  <div class="bg-[#090a0d] p-3.5 rounded-lg border border-white/[0.04] flex flex-col justify-between">
+    <span class="font-label-caps text-[9px] text-on-surface-variant/60 tracking-wider uppercase">Sleep Duration</span>
+    <div class="mt-1.5 flex items-baseline gap-1">
+      <span class="font-headline-metric-mobile text-[22px] text-white font-normal tracking-tight">7h 48m</span>
+    </div>
+    <span class="font-label-caps text-[10px] text-on-surface-variant/70 mt-1">Need: 8h 15m (95%)</span>
+  </div>
+  <div class="bg-[#090a0d] p-3.5 rounded-lg border border-white/[0.04] flex flex-col justify-between">
+    <span class="font-label-caps text-[9px] text-on-surface-variant/60 tracking-wider uppercase">Sleep Debt</span>
+    <div class="mt-1.5 flex items-baseline gap-1">
+      <span class="font-headline-metric-mobile text-[22px] text-primary-fixed-dim font-normal tracking-tight">0m</span>
+    </div>
+    <div class="flex items-center gap-1 mt-1 text-primary-fixed-dim">
+      <span class="material-symbols-outlined text-[12px]">check_circle</span>
+      <span class="font-label-caps text-[10px] tracking-wide">Debt cleared</span>
+    </div>
+  </div>
+</div></section>
+<!-- Sleep Stages Architecture Timeline (Hypnogram) -->
+<section class="flex flex-col gap-space-md"><div class="flex justify-between items-baseline px-0.5">
+  <div>
+    <span class="font-label-caps text-[9px] text-secondary tracking-[0.2em] uppercase font-medium">Telemetry Hypnogram</span>
+    <h2 class="font-headline-sm text-[17px] text-white font-medium tracking-tight mt-0.5">Sleep Architecture</h2>
+  </div>
+  <span class="font-label-caps text-[10px] text-on-surface-variant/70">7h 48m Total</span>
+</div>
+
+<!-- Segmented Hypnogram Card -->
+<div class="rounded-xl bg-[#0f1116] border border-white/[0.07] p-4 flex flex-col gap-4 shadow-sm">
+  <!-- Whisper-Thin Stacked Timeline Bar -->
+  <div class="w-full flex flex-col gap-2">
+    <div class="w-full h-2 rounded-full bg-[#08090C] flex overflow-hidden border border-white/[0.05] p-0.5 gap-0.5">
+      <!-- Deep Sleep 22% -->
+      <div class="h-full bg-[#1A73E8] rounded-l-full" style="width: 22%"></div>
+      <!-- REM Sleep 27% -->
+      <div class="h-full bg-[#7C4DFF]" style="width: 27%"></div>
+      <!-- Light Sleep 47% -->
+      <div class="h-full bg-[#00D2FF]/70" style="width: 47%"></div>
+      <!-- Awake 4% -->
+      <div class="h-full bg-[#FF3B56] rounded-r-full" style="width: 4%"></div>
+    </div>
+    <!-- Timestamps -->
+    <div class="flex justify-between font-label-caps text-[9px] text-on-surface-variant/50 px-1 tracking-wider">
+      <span class="">10:48 PM</span>
+      <span class="">01:00 AM</span>
+      <span class="">03:30 AM</span>
+      <span class="">06:36 AM</span>
+    </div>
+  </div>
+
+  <!-- Architectural Hypnogram Trace Line -->
+  <div class="w-full bg-[#08090C] p-3 rounded-lg border border-white/[0.04] flex flex-col gap-1.5">
+    <div class="flex justify-between items-center">
+      <span class="font-label-caps text-[9px] uppercase tracking-wider text-on-surface-variant/60">Cycle Oscillation</span>
+      <span class="font-label-caps text-[10px] text-primary-fixed-dim font-medium tracking-wide">5 Complete Cycles</span>
+    </div>
+    <svg class="w-full h-11 overflow-visible" fill="none" viewBox="0 0 320 40">
+      <!-- Baseline Grid Guides -->
+      <line stroke="rgba(255,255,255,0.03)" stroke-dasharray="2 4" x1="0" x2="320" y1="6" y2="6"></line>
+      <line stroke="rgba(255,255,255,0.03)" stroke-dasharray="2 4" x1="0" x2="320" y1="19" y2="19"></line>
+      <line stroke="rgba(255,255,255,0.03)" stroke-dasharray="2 4" x1="0" x2="320" y1="33" y2="33"></line>
+      <!-- Precision Line -->
+      <path d="M 0,6 L 15,6 L 25,19 L 40,33 L 65,33 L 80,19 L 105,19 L 120,6 L 128,6 L 135,19 L 160,33 L 180,33 L 195,19 L 220,19 L 235,6 L 240,6 L 255,19 L 275,33 L 295,19 L 310,6 L 320,6" stroke="#7bd0ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+    </svg>
+    <div class="flex justify-between font-label-caps text-on-surface-variant/40 text-[8px] tracking-widest px-0.5 uppercase">
+      <span class="">Awake</span>
+      <span class="">Light</span>
+      <span class="">REM</span>
+      <span class="">Deep</span>
+    </div>
+  </div>
+
+  <!-- 2x2 Sleek Obsidian Stage Cards -->
+  <div class="grid grid-cols-2 gap-2.5">
+    <!-- Deep Sleep -->
+    <div class="bg-[#08090C] p-3 rounded-lg border border-white/[0.05] flex flex-col justify-between">
+      <div>
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#1A73E8]"></span>
+          <span class="font-label-caps text-[9px] text-on-surface-variant/70 uppercase tracking-wider">Deep Sleep</span>
+        </div>
+        <div class="flex items-baseline gap-1.5 mt-1">
+          <span class="font-headline-metric-mobile text-[20px] font-normal text-white">1h 42m</span>
+          <span class="font-label-data text-[11px] text-[#7bd0ff] font-medium">22%</span>
+        </div>
+      </div>
+      <div class="mt-2 text-[9px] font-label-caps text-primary-fixed-dim flex items-center gap-1 tracking-wide">
+        <span class="material-symbols-outlined text-[11px]">check_circle</span>
+        <span class="">Physical repair</span>
+      </div>
+    </div>
+    <!-- REM Sleep -->
+    <div class="bg-[#08090C] p-3 rounded-lg border border-white/[0.05] flex flex-col justify-between">
+      <div>
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#7C4DFF]"></span>
+          <span class="font-label-caps text-[9px] text-on-surface-variant/70 uppercase tracking-wider">REM Sleep</span>
+        </div>
+        <div class="flex items-baseline gap-1.5 mt-1">
+          <span class="font-headline-metric-mobile text-[20px] font-normal text-white">2h 06m</span>
+          <span class="font-label-data text-[11px] text-[#ffb693] font-medium">27%</span>
+        </div>
+      </div>
+      <div class="mt-2 text-[9px] font-label-caps text-secondary-container flex items-center gap-1 tracking-wide">
+        <span class="material-symbols-outlined text-[11px]">psychology</span>
+        <span class="">Cognitive repair</span>
+      </div>
+    </div>
+    <!-- Light Sleep -->
+    <div class="bg-[#08090C] p-3 rounded-lg border border-white/[0.05] flex flex-col justify-between">
+      <div>
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#00D2FF]/70"></span>
+          <span class="font-label-caps text-[9px] text-on-surface-variant/70 uppercase tracking-wider">Light Sleep</span>
+        </div>
+        <div class="flex items-baseline gap-1.5 mt-1">
+          <span class="font-headline-metric-mobile text-[20px] font-normal text-white">3h 40m</span>
+          <span class="font-label-data text-[11px] text-secondary font-medium">47%</span>
+        </div>
+      </div>
+      <span class="mt-2 text-[9px] font-label-caps text-on-surface-variant/50 tracking-wide">Physiological baseline</span>
+    </div>
+    <!-- Awake -->
+    <div class="bg-[#08090C] p-3 rounded-lg border border-white/[0.05] flex flex-col justify-between">
+      <div>
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#FF3B56]"></span>
+          <span class="font-label-caps text-[9px] text-on-surface-variant/70 uppercase tracking-wider">Awake</span>
+        </div>
+        <div class="flex items-baseline gap-1.5 mt-1">
+          <span class="font-headline-metric-mobile text-[20px] font-normal text-white">20m</span>
+          <span class="font-label-data text-[11px] text-[#FF3B56] font-medium">4%</span>
+        </div>
+      </div>
+      <span class="mt-2 text-[9px] font-label-caps text-on-surface-variant/50 tracking-wide">3 micro-wake events</span>
+    </div>
+  </div>
+</div></section>
+<!-- Sleep Consistency & Circadian Alignment Widget -->
+<section class="flex flex-col gap-space-md"><div class="flex justify-between items-baseline px-0.5">
+  <div>
+    <span class="font-label-caps text-[9px] text-secondary tracking-[0.2em] uppercase font-medium">Chronobiology</span>
+    <h2 class="font-headline-sm text-[17px] text-white font-medium tracking-tight mt-0.5">Circadian Rhythm &amp; Consistency</h2>
+  </div>
+  <span class="font-label-caps text-[10px] text-primary-fixed-dim font-medium">In Phase</span>
+</div>
+
+<div class="rounded-xl bg-[#0f1116] border border-white/[0.07] p-4 flex flex-col gap-3.5">
+  <!-- Consistency Dial Row -->
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="relative w-11 h-11 flex items-center justify-center">
+        <svg class="w-full h-full -rotate-90 transform" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="18" fill="transparent" stroke="rgba(255,255,255,0.05)" stroke-width="2.5"></circle>
+          <circle cx="22" cy="22" r="18" fill="transparent" stroke="#00e388" stroke-dasharray="113.09" stroke-dashoffset="6.78" stroke-linecap="round" stroke-width="2.5"></circle>
+        </svg>
+        <span class="absolute font-label-caps text-[10px] font-medium text-white">94%</span>
+      </div>
+      <div class="flex flex-col">
+        <span class="font-headline-sm text-sm text-white font-medium">94% Sleep Regularity</span>
+        <span class="font-body-sm text-[11px] text-on-surface-variant/60">Onset: 10:48 PM • Wake: 6:36 AM</span>
+      </div>
+    </div>
+    <div class="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant/70 border border-white/[0.06]">
+      <span class="material-symbols-outlined text-[16px]">schedule</span>
+    </div>
+  </div>
+
+  <!-- Window Recommendation -->
+  <div class="bg-[#08090C] p-3 rounded-lg border border-secondary-container/15 flex flex-col gap-1 relative overflow-hidden">
+    <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-secondary-container"></div>
+    <div class="flex items-center gap-1.5 text-secondary-container pl-1">
+      <span class="material-symbols-outlined text-[14px]">wb_twilight</span>
+      <span class="font-label-caps text-[9px] tracking-wider uppercase font-medium">Tonight's Ideal Window</span>
+    </div>
+    <p class="font-label-data text-[13px] text-white font-normal pl-1">
+      10:45 PM – 6:40 AM
+    </p>
+    <span class="font-body-sm text-[11px] text-on-surface-variant/60 pl-1">
+      Calibrated for 90%+ recovery probability based on daily strain phase.
+    </span>
+  </div>
+
+  <!-- Dual Telemetry Pods -->
+  <div class="grid grid-cols-2 gap-2.5">
+    <div class="bg-[#08090C] p-3 rounded-lg border border-white/[0.04]">
+      <span class="font-label-caps text-[9px] text-on-surface-variant/60 uppercase tracking-wider">Sleep Efficiency</span>
+      <div class="flex items-baseline gap-1 mt-1">
+        <span class="font-headline-metric-mobile text-[20px] font-normal text-white">96%</span>
+      </div>
+      <span class="font-label-caps text-[9px] text-primary-fixed-dim mt-0.5 block">Time asleep / in bed</span>
+    </div>
+    <div class="bg-[#08090C] p-3 rounded-lg border border-white/[0.04]">
+      <span class="font-label-caps text-[9px] text-on-surface-variant/60 uppercase tracking-wider">Sleep Latency</span>
+      <div class="flex items-baseline gap-1 mt-1">
+        <span class="font-headline-metric-mobile text-[20px] font-normal text-white">11 min</span>
+      </div>
+      <span class="font-label-caps text-[9px] text-secondary mt-0.5 block">Ideal onset tempo</span>
+    </div>
+  </div>
+</div></section>
+<!-- Environmental & Physiological Sleep Factors -->
+<section class="flex flex-col gap-space-md"><div class="flex justify-between items-center px-0.5">
+  <span class="font-label-caps text-[9px] text-secondary tracking-[0.2em] uppercase font-medium">Biological Baselines</span>
+  <span class="font-label-caps text-[10px] text-on-surface-variant/60">Sensor Telemetry</span>
+</div>
+
+<div class="grid grid-cols-2 gap-2.5">
+  <!-- Skin Temp Avg -->
+  <div class="rounded-xl bg-[#0f1116] border border-white/[0.07] p-3.5 flex flex-col justify-between">
+    <div class="flex justify-between items-start">
+      <span class="font-label-caps text-[9px] text-on-surface-variant/60 uppercase tracking-wider">Skin Temp Avg</span>
+      <span class="material-symbols-outlined text-[16px] text-secondary-container">device_thermostat</span>
+    </div>
+    <div class="mt-2">
+      <span class="font-headline-metric-mobile text-[22px] font-normal text-white tracking-tight">92.4°F</span>
+      <div class="flex items-center gap-1 mt-0.5 text-primary-fixed-dim font-label-caps text-[9px]">
+        <span class="material-symbols-outlined text-[11px]">trending_flat</span>
+        <span class="">-0.2°F from baseline</span>
+      </div>
+    </div>
+  </div>
+  <!-- Disturbances -->
+  <div class="rounded-xl bg-[#0f1116] border border-white/[0.07] p-3.5 flex flex-col justify-between">
+    <div class="flex justify-between items-start">
+      <span class="font-label-caps text-[9px] text-on-surface-variant/60 uppercase tracking-wider">Disturbances</span>
+      <span class="material-symbols-outlined text-[16px] text-secondary">graphic_eq</span>
+    </div>
+    <div class="mt-2">
+      <span class="font-headline-metric-mobile text-[22px] font-normal text-white tracking-tight">1.4 <span class="text-[11px] font-light text-on-surface-variant/60">/ hr</span></span>
+      <div class="flex items-center gap-1 mt-0.5 text-primary-fixed-dim font-label-caps text-[9px]">
+        <span class="material-symbols-outlined text-[11px]">check</span>
+        <span class="">Quiet nocturnal stability</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Biometric Recovery Factor List -->
+<div class="rounded-xl bg-[#0f1116] border border-white/[0.07] p-4 flex flex-col gap-3">
+  <div class="flex justify-between items-center pb-2 border-b border-white/[0.04]">
+    <span class="font-headline-sm text-xs font-medium text-white tracking-wide">Nocturnal Biometrics</span>
+    <span class="font-label-caps text-[9px] text-secondary-container tracking-wider uppercase font-medium">Standard Deviations</span>
+  </div>
+  <div class="flex items-center justify-between py-0.5">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-[16px] text-[#FF6B00]">cardiology</span>
+      <span class="font-body-sm text-[13px] text-on-surface-variant/90">Resting Heart Rate</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="font-label-data text-[12px] text-white">46 bpm</span>
+      <span class="font-label-caps text-[10px] text-primary-fixed-dim font-medium">-3 bpm</span>
+    </div>
+  </div>
+  <div class="flex items-center justify-between py-0.5 border-t border-white/[0.03]">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-[16px] text-secondary-container">air</span>
+      <span class="font-body-sm text-[13px] text-on-surface-variant/90">Respiratory Rate</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="font-label-data text-[12px] text-white">14.1 rpm</span>
+      <span class="font-label-caps text-[10px] text-on-surface-variant/50">0.0 rpm</span>
+    </div>
+  </div>
+  <div class="flex items-center justify-between py-0.5 border-t border-white/[0.03]">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-[16px] text-primary-fixed-dim">ecg_heart</span>
+      <span class="font-body-sm text-[13px] text-on-surface-variant/90">Nightly HRV Average</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="font-label-data text-[12px] text-white">104 ms</span>
+      <span class="font-label-caps text-[10px] text-primary-fixed-dim font-medium">+8 ms</span>
+    </div>
+  </div>
+</div></section>
+</main>
+<!-- Floating BottomNavBar (Anchored Execution: 'Sleep' Active Tab) -->
+<div class="fixed bottom-0 left-0 w-full z-50 flex justify-center items-center pb-6 px-4 pointer-events-none">
+<nav class="pointer-events-auto bg-surface-container-low/85 dark:bg-surface-container-low/85 backdrop-blur-2xl floating rounded-full mx-4 mb-4 border border-outline-variant/40 shadow-2xl shadow-surface-container-lowest/80 flex items-center justify-around px-2 py-1.5 w-full max-w-[360px]">
+<!-- Tab 1: Pulse -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant py-1 px-3 active:scale-95 transition-transform duration-150 hover:text-primary dark:hover:text-primary">
+<span class="material-symbols-outlined text-[22px]">vital_signs</span>
+<span class="text-label-caps font-label-caps text-[9px] mt-0.5">Pulse</span>
+</button>
+<!-- Tab 2: Recovery -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant py-1 px-3 active:scale-95 transition-transform duration-150 hover:text-primary dark:hover:text-primary">
+<span class="material-symbols-outlined text-[22px]">favorite</span>
+<span class="text-label-caps font-label-caps text-[9px] mt-0.5">Recovery</span>
+</button>
+<!-- Tab 3: Strain -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant py-1 px-3 active:scale-95 transition-transform duration-150 hover:text-primary dark:hover:text-primary">
+<span class="material-symbols-outlined text-[22px]">bolt</span>
+<span class="text-label-caps font-label-caps text-[9px] mt-0.5">Strain</span>
+</button>
+<!-- Tab 4: Sleep (STRICT MATCH - ACTIVE STATE) -->
+<button class="flex flex-col items-center justify-center text-primary dark:text-primary relative py-1 px-3 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">bedtime</span>
+<span class="text-label-caps font-label-caps text-[9px] mt-0.5 font-bold">Sleep</span>
+<!-- Bioluminescent Active Micro Indicator -->
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-container mt-0.5 shadow-[0_0_8px_#00D2FF]"></span>
+</button>
+<!-- Tab 5: Trends -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant py-1 px-3 active:scale-95 transition-transform duration-150 hover:text-primary dark:hover:text-primary">
+<span class="material-symbols-outlined text-[22px]">monitoring</span>
+<span class="text-label-caps font-label-caps text-[9px] mt-0.5">Trends</span>
+</button>
+</nav>
+</div>
+</div>
+
+
+</body></html>
