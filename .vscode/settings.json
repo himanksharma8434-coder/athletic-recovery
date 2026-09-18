@@ -1,0 +1,14 @@
+{
+  "dart.flutterSdkPath": "C:\\src\\flutter",
+  "java.import.gradle.enabled": false,
+  "java.autobuild.enabled": false,
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/.dart_tool": true
+  }
+}

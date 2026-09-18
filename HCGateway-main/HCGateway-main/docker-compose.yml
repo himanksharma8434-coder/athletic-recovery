@@ -1,0 +1,24 @@
+
+services:
+  api:
+    image: ghcr.io/shuchirj/hcgateway:latest
+    ports:
+      - "6644:6644"
+    env_file:
+      - ./api/.env
+    container_name: hcgateway_api
+    restart: always
+    volumes:
+      - ./api/service-account.json:/app/service-account.json
+
+  db:
+    image: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./db:/data/db
+    container_name: hcgateway_db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
