@@ -12,7 +12,13 @@ class BaselineDao extends DatabaseAccessor<AppDatabase>
 
   /// Upsert a baseline for a given date.
   Future<void> upsertBaseline(DailyBaselinesCompanion baseline) async {
-    await into(dailyBaselines).insertOnConflictUpdate(baseline);
+    await into(dailyBaselines).insert(
+      baseline,
+      onConflict: DoUpdate(
+        (_) => baseline,
+        target: [dailyBaselines.date],
+      ),
+    );
   }
 
   /// Get baseline for a specific date.

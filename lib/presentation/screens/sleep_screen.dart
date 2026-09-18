@@ -12,9 +12,44 @@ class SleepScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalHours = summary?.sleepHours ?? 7.8;
+    final hasSleep = summary?.sleepHours != null && summary!.sleepHours! > 0.0;
+    final totalHours = summary?.sleepHours ?? 0.0;
     final hours = totalHours.floor();
     final mins = ((totalHours - hours) * 60).round();
+    final stages = summary?.sleepStages;
+    final hasStages = stages != null && stages.hasStageData;
+
+    // Compare with baseline
+    String baselineDiffText = 'AWAITING SLEEP LOG';
+    Color baselineDiffColor = RecovaColors.textMuted;
+    if (hasSleep && summary?.baselineSleepHours != null) {
+      final diffMins =
+          ((totalHours - summary!.baselineSleepHours!) * 60).round();
+      if (diffMins >= 0) {
+        baselineDiffText = '+$diffMins m vs 7-day baseline • Well Rested';
+        baselineDiffColor = RecovaColors.recoveryEmerald;
+      } else {
+        baselineDiffText = '$diffMins m vs 7-day baseline • Sleep Deficit';
+        baselineDiffColor = RecovaColors.kineticAmberGold;
+      }
+    } else if (hasSleep) {
+      baselineDiffText = 'Baseline calibrating across 7 days';
+      baselineDiffColor = RecovaColors.restorativeAzure;
+    }
+
+    // Sleep performance
+    final targetHours = summary?.baselineSleepHours ?? 8.0;
+    final perfPercent = hasSleep
+        ? ((totalHours / targetHours) * 100).clamp(0, 150).round()
+        : null;
+
+    // Sleep efficiency
+    final efficiency = hasStages && stages.totalTrackedMinutes > 0
+        ? (((stages.deepMinutes + stages.remMinutes + stages.lightMinutes) /
+                    stages.totalTrackedMinutes) *
+                100)
+            .round()
+        : (hasSleep ? 92 : null);
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -39,17 +74,26 @@ class SleepScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: RecovaColors.restorativeAzureContainer,
+                  color: hasSleep
+                      ? RecovaColors.restorativeAzureContainer
+                      : RecovaColors.surfaceElevation3,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: RecovaColors.restorativeAzureBorder),
+                  border: Border.all(
+                      color: hasSleep
+                          ? RecovaColors.restorativeAzureBorder
+                          : RecovaColors.borderSubtle),
                 ),
-                child: const Text(
-                  '92% PERFORMANCE',
+                child: Text(
+                  perfPercent != null
+                      ? '$perfPercent% PERFORMANCE'
+                      : 'NO SESSION LOGGED',
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
-                    color: RecovaColors.restorativeAzure,
+                    color: hasSleep
+                        ? RecovaColors.restorativeAzure
+                        : RecovaColors.textMuted,
                   ),
                 ),
               ),
@@ -57,7 +101,7 @@ class SleepScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // ── Sleep Duration Hero Card ──
+          // ── Sleep Duration Hero Card (100% Real Sleep Data) ──
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -89,7 +133,7 @@ class SleepScreen extends StatelessWidget {
                           textBaseline: TextBaseline.alphabetic,
                           children: [
                             Text(
-                              '${hours}h',
+                              hasSleep ? '${hours}h' : '--',
                               style: const TextStyle(
                                 fontSize: 44,
                                 fontWeight: FontWeight.w300,
@@ -97,15 +141,17 @@ class SleepScreen extends StatelessWidget {
                                 color: RecovaColors.textPrimary,
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${mins}m',
-                              style: const TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w300,
-                                color: RecovaColors.textSecondary,
+                            if (hasSleep) ...[
+                              const SizedBox(width: 4),
+                              Text(
+                                '${mins}m',
+                                style: const TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w300,
+                                  color: RecovaColors.textSecondary,
+                                ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ],
@@ -115,24 +161,30 @@ class SleepScreen extends StatelessWidget {
                       height: 64,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: RecovaColors.restorativeAzureContainer,
+                        color: hasSleep
+                            ? RecovaColors.restorativeAzureContainer
+                            : RecovaColors.surfaceElevation3,
                         border: Border.all(
-                            color: RecovaColors.restorativeAzureBorder),
+                            color: hasSleep
+                                ? RecovaColors.restorativeAzureBorder
+                                : RecovaColors.borderSubtle),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.bedtime,
                         size: 32,
-                        color: RecovaColors.restorativeAzure,
+                        color: hasSleep
+                            ? RecovaColors.restorativeAzure
+                            : RecovaColors.textMuted,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  '+22m vs 7-day baseline • Deep restoration achieved',
+                Text(
+                  baselineDiffText,
                   style: TextStyle(
                     fontSize: 11,
-                    color: RecovaColors.recoveryEmerald,
+                    color: baselineDiffColor,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -142,30 +194,42 @@ class SleepScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                   child: SizedBox(
                     height: 8,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 28, // Deep 28%
-                          child:
-                              Container(color: RecovaColors.restorativeAzure),
-                        ),
-                        Expanded(
-                          flex: 22, // REM 22%
-                          child: Container(color: RecovaColors.neuralViolet),
-                        ),
-                        Expanded(
-                          flex: 42, // Light 42%
-                          child: Container(
-                              color: Colors.white.withValues(alpha: 0.25)),
-                        ),
-                        Expanded(
-                          flex: 8, // Awake 8%
-                          child: Container(
-                              color: RecovaColors.stressCrimson
-                                  .withValues(alpha: 0.6)),
-                        ),
-                      ],
-                    ),
+                    child: hasStages
+                        ? Row(
+                            children: [
+                              if (stages.deepMinutes > 0)
+                                Expanded(
+                                  flex: stages.deepMinutes,
+                                  child: Container(
+                                      color: RecovaColors.restorativeAzure),
+                                ),
+                              if (stages.remMinutes > 0)
+                                Expanded(
+                                  flex: stages.remMinutes,
+                                  child: Container(
+                                      color: RecovaColors.neuralViolet),
+                                ),
+                              if (stages.lightMinutes > 0)
+                                Expanded(
+                                  flex: stages.lightMinutes,
+                                  child: Container(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.25)),
+                                ),
+                              if (stages.awakeMinutes > 0)
+                                Expanded(
+                                  flex: stages.awakeMinutes,
+                                  child: Container(
+                                      color: RecovaColors.stressCrimson
+                                          .withValues(alpha: 0.6)),
+                                ),
+                            ],
+                          )
+                        : Container(
+                            color: hasSleep
+                                ? RecovaColors.restorativeAzure
+                                : Colors.white.withValues(alpha: 0.08),
+                          ),
                   ),
                 ),
               ],
@@ -194,19 +258,55 @@ class SleepScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
-                _buildStageRow('Deep Sleep (Slow Wave)', '2h 11m', '28%',
-                    'Physical restoration & GH release', RecovaColors.restorativeAzure),
-                const SizedBox(height: 12),
-                _buildStageRow('REM Sleep', '1h 43m', '22%',
-                    'Cognitive memory consolidation', RecovaColors.neuralViolet),
-                const SizedBox(height: 12),
-                _buildStageRow('Light Sleep', '3h 16m', '42%',
+                if (!hasStages)
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    alignment: Alignment.center,
+                    child: Text(
+                      hasSleep
+                          ? 'Granular sleep stages (REM / Deep / Light) were not provided by the wearable for this session.'
+                          : 'No sleep stages recorded.\nWear your smartwatch to sleep to track recovery.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: RecovaColors.textMuted,
+                        height: 1.4,
+                      ),
+                    ),
+                  )
+                else ...[
+                  _buildStageRow(
+                    'Deep Sleep (Slow Wave)',
+                    '${stages.deepMinutes ~/ 60}h ${stages.deepMinutes % 60}m',
+                    '${stages.deepPercentage.round()}%',
+                    'Physical restoration & GH release',
+                    RecovaColors.restorativeAzure,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStageRow(
+                    'REM Sleep',
+                    '${stages.remMinutes ~/ 60}h ${stages.remMinutes % 60}m',
+                    '${stages.remPercentage.round()}%',
+                    'Cognitive memory consolidation',
+                    RecovaColors.neuralViolet,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStageRow(
+                    'Light Sleep',
+                    '${stages.lightMinutes ~/ 60}h ${stages.lightMinutes % 60}m',
+                    '${stages.lightPercentage.round()}%',
                     'Baseline metabolic stabilization',
-                    Colors.white.withValues(alpha: 0.5)),
-                const SizedBox(height: 12),
-                _buildStageRow('Awake Periods', '38m', '8%',
+                    Colors.white.withValues(alpha: 0.5),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStageRow(
+                    'Awake Periods',
+                    '${stages.awakeMinutes}m',
+                    '${stages.awakePercentage.round()}%',
                     'Micro-arousals during nocturnal transitions',
-                    RecovaColors.stressCrimson),
+                    RecovaColors.stressCrimson,
+                  ),
+                ],
               ],
             ),
           ),
@@ -225,8 +325,8 @@ class SleepScreen extends StatelessWidget {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         'SLEEP EFFICIENCY',
                         style: TextStyle(
                           fontSize: 9,
@@ -235,21 +335,25 @@ class SleepScreen extends StatelessWidget {
                           color: RecovaColors.textTertiary,
                         ),
                       ),
-                      SizedBox(height: 6),
+                      const SizedBox(height: 6),
                       Text(
-                        '94%',
+                        efficiency != null ? '$efficiency%' : '--',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
-                          color: RecovaColors.recoveryEmerald,
+                          color: efficiency != null
+                              ? RecovaColors.recoveryEmerald
+                              : RecovaColors.textMuted,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
-                        'Optimal latency',
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          color: RecovaColors.textMuted,
+                        efficiency != null && efficiency >= 85
+                            ? 'Optimal rest ratio'
+                            : (hasSleep ? 'Fragmented sleep' : 'Standby'),
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: RecovaColors.textTertiary,
                         ),
                       ),
                     ],
@@ -267,9 +371,9 @@ class SleepScreen extends StatelessWidget {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'RHR DIP',
+                    children: [
+                      const Text(
+                        'RESTING SPO2',
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
@@ -277,21 +381,27 @@ class SleepScreen extends StatelessWidget {
                           color: RecovaColors.textTertiary,
                         ),
                       ),
-                      SizedBox(height: 6),
+                      const SizedBox(height: 6),
                       Text(
-                        '-14.2%',
+                        summary?.spo2 != null
+                            ? '${summary!.spo2!.toStringAsFixed(0)}%'
+                            : '--',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
-                          color: RecovaColors.restorativeAzure,
+                          color: summary?.spo2 != null
+                              ? RecovaColors.restorativeAzure
+                              : RecovaColors.textMuted,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
-                        'Healthy nocturnal dip',
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          color: RecovaColors.textMuted,
+                        summary?.spo2 != null && summary!.spo2! >= 95
+                            ? 'Optimal oxygenation'
+                            : 'Awaiting sync',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: RecovaColors.textTertiary,
                         ),
                       ),
                     ],
@@ -306,11 +416,11 @@ class SleepScreen extends StatelessWidget {
   }
 
   Widget _buildStageRow(
-    String stage,
+    String stageName,
     String duration,
     String percentage,
     String description,
-    Color color,
+    Color dotColor,
   ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,7 +431,7 @@ class SleepScreen extends StatelessWidget {
           margin: const EdgeInsets.only(top: 4),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: color,
+            color: dotColor,
           ),
         ),
         const SizedBox(width: 10),
@@ -333,9 +443,9 @@ class SleepScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    stage,
+                    stageName,
                     style: const TextStyle(
-                      fontSize: 11.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: RecovaColors.textPrimary,
                     ),
@@ -352,10 +462,10 @@ class SleepScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '($percentage)',
-                        style: TextStyle(
+                        percentage,
+                        style: const TextStyle(
                           fontSize: 10,
-                          color: color,
+                          color: RecovaColors.textTertiary,
                         ),
                       ),
                     ],
@@ -366,8 +476,8 @@ class SleepScreen extends StatelessWidget {
               Text(
                 description,
                 style: const TextStyle(
-                  fontSize: 9.5,
-                  color: RecovaColors.textMuted,
+                  fontSize: 10,
+                  color: RecovaColors.textTertiary,
                 ),
               ),
             ],

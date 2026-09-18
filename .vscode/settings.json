@@ -10,5 +10,6 @@
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
     "**/.dart_tool": true
-  }
+  },
+  "java.configuration.updateBuildConfiguration": "automatic"
 }

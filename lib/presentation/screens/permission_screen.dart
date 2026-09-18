@@ -100,8 +100,14 @@ class PermissionScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 const _DataTypeChip(
                   icon: Icons.directions_run,
-                  label: 'Workouts & Caloric Burn',
+                  label: 'Workouts, Steps & Active Energy',
                   accentColor: RecovaColors.recoveryEmeraldBright,
+                ),
+                const SizedBox(height: 8),
+                const _DataTypeChip(
+                  icon: Icons.thermostat_outlined,
+                  label: 'Respiration, Vitals & Temperature',
+                  accentColor: RecovaColors.neuralViolet,
                 ),
                 const SizedBox(height: 36),
 

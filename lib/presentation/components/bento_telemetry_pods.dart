@@ -1,24 +1,37 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/recova_colors.dart';
+import '../../domain/repositories/health_source_repository.dart';
 
 class BentoTelemetryPods extends StatelessWidget {
   final double? dayStrain;
   final double? sleepHours;
+  final double? baselineSleepHours;
+  final SleepStageBreakdown? sleepStages;
 
   const BentoTelemetryPods({
     super.key,
     this.dayStrain,
     this.sleepHours,
+    this.baselineSleepHours,
+    this.sleepStages,
   });
 
   @override
   Widget build(BuildContext context) {
-    final strain = dayStrain ?? 9.4;
+    final hasStrain = dayStrain != null && dayStrain! > 0.0;
+    final strain = dayStrain ?? 0.0;
     final strainPercent = (strain / 21.0).clamp(0.0, 1.0);
 
-    final sleep = sleepHours ?? 7.8;
+    final hasSleep = sleepHours != null && sleepHours! > 0.0;
+    final sleep = sleepHours ?? 0.0;
     final sleepH = sleep.floor();
     final sleepM = ((sleep - sleepH) * 60).round();
+
+    // Calculate real sleep performance vs baseline (e.g. 7-8h or user baseline)
+    final baselineH = baselineSleepHours ?? 8.0;
+    final sleepPerf = hasSleep && baselineH > 0
+        ? ((sleep / baselineH) * 100).clamp(0, 150).round()
+        : null;
 
     return Row(
       children: [
@@ -68,7 +81,7 @@ class BentoTelemetryPods extends StatelessWidget {
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
-                      strain.toStringAsFixed(1),
+                      hasStrain ? strain.toStringAsFixed(1) : '--',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w300,
@@ -88,16 +101,20 @@ class BentoTelemetryPods extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  strain >= 14
-                      ? 'HIGH LOAD'
-                      : strain >= 8
-                          ? 'MODERATE LOAD'
-                          : 'LIGHT LOAD',
-                  style: const TextStyle(
+                  hasStrain
+                      ? (strain >= 14
+                          ? 'HIGH LOAD'
+                          : strain >= 8
+                              ? 'MODERATE LOAD'
+                              : 'LIGHT LOAD')
+                      : 'NO LOAD RECORDED',
+                  style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.8,
-                    color: RecovaColors.kineticAmberGold,
+                    color: hasStrain
+                        ? RecovaColors.kineticAmberGold
+                        : RecovaColors.textMuted,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -148,9 +165,9 @@ class BentoTelemetryPods extends StatelessWidget {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
+                  children: [
                     Row(
-                      children: [
+                      children: const [
                         Icon(Icons.bedtime,
                             size: 15, color: RecovaColors.restorativeAzure),
                         SizedBox(width: 4),
@@ -166,8 +183,8 @@ class BentoTelemetryPods extends StatelessWidget {
                       ],
                     ),
                     Text(
-                      '92% PERF',
-                      style: TextStyle(
+                      sleepPerf != null ? '$sleepPerf% PERF' : '--',
+                      style: const TextStyle(
                         fontSize: 8.5,
                         fontWeight: FontWeight.w600,
                         color: RecovaColors.restorativeAzure,
@@ -181,7 +198,7 @@ class BentoTelemetryPods extends StatelessWidget {
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
-                      '${sleepH}h',
+                      hasSleep ? '${sleepH}h' : '--',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w300,
@@ -189,58 +206,79 @@ class BentoTelemetryPods extends StatelessWidget {
                         color: RecovaColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${sleepM}m',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w300,
-                        color: RecovaColors.textSecondary,
+                    if (hasSleep) ...[
+                      const SizedBox(width: 4),
+                      Text(
+                        '${sleepM}m',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w300,
+                          color: RecovaColors.textSecondary,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'DEBT CLEARED',
+                Text(
+                  hasSleep
+                      ? (sleep >= baselineH
+                          ? 'BASELINE MET'
+                          : 'SLEEP DEFICIT')
+                      : 'AWAITING SLEEP LOG',
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.8,
-                    color: RecovaColors.recoveryEmerald,
+                    color: hasSleep
+                        ? (sleep >= baselineH
+                            ? RecovaColors.recoveryEmerald
+                            : RecovaColors.kineticAmberGold)
+                        : RecovaColors.textMuted,
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Multi-stage bar: Deep, REM, Light
+                // Real Stage breakdown or single bar
                 ClipRRect(
                   borderRadius: BorderRadius.circular(2),
                   child: SizedBox(
                     height: 4,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 28, // Deep
-                          child: Container(color: RecovaColors.restorativeAzure),
-                        ),
-                        Expanded(
-                          flex: 22, // REM
-                          child: Container(
-                              color: RecovaColors.restorativeAzure
-                                  .withValues(alpha: 0.6)),
-                        ),
-                        Expanded(
-                          flex: 42, // Light
-                          child: Container(
-                              color: Colors.white.withValues(alpha: 0.2)),
-                        ),
-                        Expanded(
-                          flex: 8, // Awake
-                          child: Container(
-                              color: RecovaColors.stressCrimson
-                                  .withValues(alpha: 0.6)),
-                        ),
-                      ],
-                    ),
+                    child: (sleepStages != null && sleepStages!.hasStageData)
+                        ? Row(
+                            children: [
+                              if (sleepStages!.deepMinutes > 0)
+                                Expanded(
+                                  flex: sleepStages!.deepMinutes,
+                                  child: Container(
+                                      color: RecovaColors.restorativeAzure),
+                                ),
+                              if (sleepStages!.remMinutes > 0)
+                                Expanded(
+                                  flex: sleepStages!.remMinutes,
+                                  child: Container(
+                                      color: RecovaColors.neuralViolet),
+                                ),
+                              if (sleepStages!.lightMinutes > 0)
+                                Expanded(
+                                  flex: sleepStages!.lightMinutes,
+                                  child: Container(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.25)),
+                                ),
+                              if (sleepStages!.awakeMinutes > 0)
+                                Expanded(
+                                  flex: sleepStages!.awakeMinutes,
+                                  child: Container(
+                                      color: RecovaColors.stressCrimson
+                                          .withValues(alpha: 0.6)),
+                                ),
+                            ],
+                          )
+                        : Container(
+                            color: hasSleep
+                                ? RecovaColors.restorativeAzure
+                                : Colors.white.withValues(alpha: 0.08),
+                          ),
                   ),
                 ),
               ],

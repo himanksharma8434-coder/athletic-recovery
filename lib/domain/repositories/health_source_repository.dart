@@ -33,7 +33,62 @@ abstract class HealthSourceRepository {
   Stream<DerivedMetricSummary?> watchLatestSummary();
 }
 
-/// Summary object for the dashboard.
+/// Breakdown of sleep architecture stages from wearable sensors.
+class SleepStageBreakdown {
+  final int deepMinutes;
+  final int remMinutes;
+  final int lightMinutes;
+  final int awakeMinutes;
+
+  const SleepStageBreakdown({
+    this.deepMinutes = 0,
+    this.remMinutes = 0,
+    this.lightMinutes = 0,
+    this.awakeMinutes = 0,
+  });
+
+  int get totalTrackedMinutes =>
+      deepMinutes + remMinutes + lightMinutes + awakeMinutes;
+
+  double get deepPercentage =>
+      totalTrackedMinutes > 0 ? (deepMinutes / totalTrackedMinutes) * 100 : 0;
+
+  double get remPercentage =>
+      totalTrackedMinutes > 0 ? (remMinutes / totalTrackedMinutes) * 100 : 0;
+
+  double get lightPercentage =>
+      totalTrackedMinutes > 0 ? (lightMinutes / totalTrackedMinutes) * 100 : 0;
+
+  double get awakePercentage =>
+      totalTrackedMinutes > 0 ? (awakeMinutes / totalTrackedMinutes) * 100 : 0;
+
+  bool get hasStageData => (deepMinutes + remMinutes + lightMinutes) > 0;
+}
+
+/// Real workout session logged by wearable / Health Connect.
+class WorkoutSessionSummary {
+  final String title;
+  final int durationMinutes;
+  final double? calories;
+  final DateTime startTime;
+
+  const WorkoutSessionSummary({
+    required this.title,
+    required this.durationMinutes,
+    this.calories,
+    required this.startTime,
+  });
+}
+
+/// Single point in historical trend.
+class HistoricalScorePoint {
+  final DateTime date;
+  final double score;
+
+  const HistoricalScorePoint({required this.date, required this.score});
+}
+
+/// Summary object for the dashboard and all tabs. 100% computed from real data.
 class DerivedMetricSummary {
   final double? recoveryScore;
   final double? recoveryComponentRhr;
@@ -42,8 +97,20 @@ class DerivedMetricSummary {
   final String? primaryFactor;
   final double? estimatedVo2Max;
   final double? restingHr;
+  final double? baselineRestingHr;
   final double? sleepHours;
+  final double? baselineSleepHours;
   final double? spo2;
+  final double? baselineSpo2;
+  final double? hrvMs;
+  final double? dayStrain;
+  final double? targetStrain;
+  final double? activeCalories;
+  final double? totalCalories;
+  final int? todaySteps;
+  final SleepStageBreakdown? sleepStages;
+  final List<WorkoutSessionSummary> workouts;
+  final List<HistoricalScorePoint> recoveryHistory14d;
   final int totalRecords;
   final DateTime? lastSyncedAt;
 
@@ -55,8 +122,20 @@ class DerivedMetricSummary {
     this.primaryFactor,
     this.estimatedVo2Max,
     this.restingHr,
+    this.baselineRestingHr,
     this.sleepHours,
+    this.baselineSleepHours,
     this.spo2,
+    this.baselineSpo2,
+    this.hrvMs,
+    this.dayStrain,
+    this.targetStrain,
+    this.activeCalories,
+    this.totalCalories,
+    this.todaySteps,
+    this.sleepStages,
+    this.workouts = const [],
+    this.recoveryHistory14d = const [],
     this.totalRecords = 0,
     this.lastSyncedAt,
   });

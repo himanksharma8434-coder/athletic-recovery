@@ -23,6 +23,39 @@ class PulseScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dynamic RHR delta vs baseline
+    String rhrDeltaText = 'AWAITING SYNC';
+    Color rhrDeltaColor = RecovaColors.textMuted;
+    if (summary?.restingHr != null && summary?.baselineRestingHr != null) {
+      final diff = (summary!.restingHr! - summary!.baselineRestingHr!).round();
+      if (diff < 0) {
+        rhrDeltaText = '$diff bpm basal';
+        rhrDeltaColor = RecovaColors.recoveryEmerald;
+      } else if (diff > 0) {
+        rhrDeltaText = '+$diff bpm basal';
+        rhrDeltaColor = RecovaColors.stressCrimson;
+      } else {
+        rhrDeltaText = 'ON BASELINE';
+        rhrDeltaColor = RecovaColors.recoveryEmerald;
+      }
+    } else if (summary?.restingHr != null) {
+      rhrDeltaText = 'CURRENT BASAL';
+      rhrDeltaColor = RecovaColors.recoveryEmerald;
+    }
+
+    // Dynamic SpO2 delta / state
+    String spo2DeltaText = 'AWAITING SYNC';
+    Color spo2DeltaColor = RecovaColors.textMuted;
+    if (summary?.spo2 != null) {
+      if (summary!.spo2! >= 95) {
+        spo2DeltaText = 'OPTIMAL RANGE';
+        spo2DeltaColor = RecovaColors.recoveryEmerald;
+      } else {
+        spo2DeltaText = 'ELEVATED DESAT';
+        spo2DeltaColor = RecovaColors.kineticAmberGold;
+      }
+    }
+
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 96),
@@ -76,21 +109,25 @@ class PulseScreen extends StatelessWidget {
                           Container(
                             width: 5,
                             height: 5,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: RecovaColors.recoveryEmerald,
+                              color: summary != null
+                                  ? RecovaColors.recoveryEmerald
+                                  : RecovaColors.kineticAmberGold,
                             ),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             summary != null
                                 ? 'HEALTH CONNECT • SYNCED'
-                                : 'AWAITING SYNC',
-                            style: const TextStyle(
+                                : 'AWAITING WEARABLE SYNC',
+                            style: TextStyle(
                               fontSize: 8.5,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.8,
-                              color: RecovaColors.recoveryEmerald,
+                              color: summary != null
+                                  ? RecovaColors.recoveryEmerald
+                                  : RecovaColors.kineticAmberGold,
                             ),
                           ),
                         ],
@@ -138,16 +175,22 @@ class PulseScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // ── 3-Column Quick Vital Metrics ──
+          // ── 3-Column Quick Vital Metrics (100% Real Sensor Data) ──
           Row(
             children: [
               Expanded(
                 child: VitalMetricTile(
                   label: 'HRV (SDNN)',
-                  value: summary?.recoveryScore != null ? '84' : '--',
+                  value: summary?.hrvMs != null
+                      ? '${summary!.hrvMs!.toInt()}'
+                      : '--',
                   unit: 'ms',
-                  deltaText: '+12% vs 7D',
-                  deltaColor: RecovaColors.recoveryEmerald,
+                  deltaText: summary?.hrvMs != null
+                      ? 'REAL SENSOR'
+                      : 'NO SENSOR LOG',
+                  deltaColor: summary?.hrvMs != null
+                      ? RecovaColors.recoveryEmerald
+                      : RecovaColors.textMuted,
                   icon: Icons.monitor_heart_outlined,
                 ),
               ),
@@ -159,8 +202,8 @@ class PulseScreen extends StatelessWidget {
                       ? '${summary!.restingHr!.toInt()}'
                       : '--',
                   unit: 'bpm',
-                  deltaText: '-2 bpm basal',
-                  deltaColor: RecovaColors.recoveryEmerald,
+                  deltaText: rhrDeltaText,
+                  deltaColor: rhrDeltaColor,
                   icon: Icons.favorite_border,
                 ),
               ),
@@ -172,8 +215,8 @@ class PulseScreen extends StatelessWidget {
                       ? summary!.spo2!.toStringAsFixed(0)
                       : '--',
                   unit: '%',
-                  deltaText: 'OPTIMAL',
-                  deltaColor: RecovaColors.restorativeAzure,
+                  deltaText: spo2DeltaText,
+                  deltaColor: spo2DeltaColor,
                   icon: Icons.air,
                 ),
               ),
@@ -190,7 +233,10 @@ class PulseScreen extends StatelessWidget {
 
           // ── Bento Dual Pods: Strain + Sleep ──
           BentoTelemetryPods(
+            dayStrain: summary?.dayStrain,
             sleepHours: summary?.sleepHours,
+            baselineSleepHours: summary?.baselineSleepHours,
+            sleepStages: summary?.sleepStages,
           ),
           const SizedBox(height: 14),
 

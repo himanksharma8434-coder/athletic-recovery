@@ -32,6 +32,9 @@ part 'app_database.g.dart';
 class AppDatabase extends _$AppDatabase {
   AppDatabase._() : super(driftDatabase(name: 'recova_health'));
 
+  /// Test constructor for in-memory testing.
+  AppDatabase.forTesting(super.e);
+
   static AppDatabase? _instance;
 
   /// Singleton accessor. Use this everywhere.

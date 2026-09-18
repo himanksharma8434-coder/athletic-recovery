@@ -12,7 +12,13 @@ class DerivedMetricDao extends DatabaseAccessor<AppDatabase>
 
   /// Upsert derived metrics for a given date.
   Future<void> upsertMetric(DerivedMetricsCompanion metric) async {
-    await into(derivedMetrics).insertOnConflictUpdate(metric);
+    await into(derivedMetrics).insert(
+      metric,
+      onConflict: DoUpdate(
+        (_) => metric,
+        target: [derivedMetrics.date],
+      ),
+    );
   }
 
   /// Get derived metric for a specific date.
@@ -35,5 +41,14 @@ class DerivedMetricDao extends DatabaseAccessor<AppDatabase>
           ..orderBy([(m) => OrderingTerm.desc(m.date)])
           ..limit(1))
         .watchSingleOrNull();
+  }
+
+  /// Get historical derived metrics for the last [days] days in chronological order.
+  Future<List<DerivedMetric>> getHistory(int days) {
+    final cutoff = DateTime.now().subtract(Duration(days: days));
+    return (select(derivedMetrics)
+          ..where((m) => m.date.isBiggerOrEqualValue(cutoff))
+          ..orderBy([(m) => OrderingTerm.asc(m.date)]))
+        .get();
   }
 }

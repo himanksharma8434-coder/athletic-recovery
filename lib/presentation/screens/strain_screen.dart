@@ -1,15 +1,27 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/recova_colors.dart';
+import '../../domain/repositories/health_source_repository.dart';
 
 class StrainScreen extends StatelessWidget {
-  const StrainScreen({super.key});
+  final DerivedMetricSummary? summary;
+
+  const StrainScreen({
+    super.key,
+    this.summary,
+  });
 
   @override
   Widget build(BuildContext context) {
-    const dayStrain = 11.8;
-    const targetStrain = 15.0;
-    const activeCalories = 642;
-    const totalCalories = 2180;
+    final hasStrain = summary?.dayStrain != null && summary!.dayStrain! > 0.0;
+    final dayStrain = summary?.dayStrain ?? 0.0;
+    final targetStrain = summary?.targetStrain ?? 14.0;
+    final activeCalories = summary?.activeCalories?.toInt();
+    final totalCalories = summary?.totalCalories?.toInt();
+    final todaySteps = summary?.todaySteps;
+    final workouts = summary?.workouts ?? [];
+
+    final progressRatio = targetStrain > 0 ? (dayStrain / targetStrain).clamp(0.0, 1.0) : 0.0;
+    final progressPercent = (progressRatio * 100).round();
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -34,17 +46,30 @@ class StrainScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: RecovaColors.kineticAmberContainer,
+                  color: hasStrain
+                      ? RecovaColors.kineticAmberContainer
+                      : RecovaColors.surfaceElevation3,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: RecovaColors.kineticAmberBorder),
+                  border: Border.all(
+                      color: hasStrain
+                          ? RecovaColors.kineticAmberBorder
+                          : RecovaColors.borderSubtle),
                 ),
-                child: const Text(
-                  'MODERATE ACCUMULATION',
+                child: Text(
+                  hasStrain
+                      ? (dayStrain >= 14
+                          ? 'HIGH ACCUMULATION'
+                          : dayStrain >= 8
+                              ? 'MODERATE LOAD'
+                              : 'LIGHT ACCUMULATION')
+                      : 'NO STRAIN LOGGED',
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
-                    color: RecovaColors.kineticAmberGold,
+                    color: hasStrain
+                        ? RecovaColors.kineticAmberGold
+                        : RecovaColors.textMuted,
                   ),
                 ),
               ),
@@ -52,7 +77,7 @@ class StrainScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // ── Strain Score Hero Card ──
+          // ── Strain Score Hero Card (100% Real Accumulated Load) ──
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -81,18 +106,18 @@ class StrainScreen extends StatelessWidget {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.baseline,
                           textBaseline: TextBaseline.alphabetic,
-                          children: const [
+                          children: [
                             Text(
-                              '$dayStrain',
-                              style: TextStyle(
+                              hasStrain ? dayStrain.toStringAsFixed(1) : '--',
+                              style: const TextStyle(
                                 fontSize: 44,
                                 fontWeight: FontWeight.w300,
                                 letterSpacing: -1.0,
                                 color: RecovaColors.textPrimary,
                               ),
                             ),
-                            SizedBox(width: 6),
-                            Text(
+                            const SizedBox(width: 6),
+                            const Text(
                               '/ 21.0',
                               style: TextStyle(
                                 fontSize: 14,
@@ -108,14 +133,20 @@ class StrainScreen extends StatelessWidget {
                       height: 64,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: RecovaColors.kineticAmberContainer,
-                        border:
-                            Border.all(color: RecovaColors.kineticAmberBorder),
+                        color: hasStrain
+                            ? RecovaColors.kineticAmberContainer
+                            : RecovaColors.surfaceElevation3,
+                        border: Border.all(
+                            color: hasStrain
+                                ? RecovaColors.kineticAmberBorder
+                                : RecovaColors.borderSubtle),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.bolt,
                         size: 32,
-                        color: RecovaColors.kineticAmberGold,
+                        color: hasStrain
+                            ? RecovaColors.kineticAmberGold
+                            : RecovaColors.textMuted,
                       ),
                     ),
                   ],
@@ -126,10 +157,10 @@ class StrainScreen extends StatelessWidget {
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
+                      children: [
                         Text(
-                          'TARGET STRAIN: $targetStrain',
-                          style: TextStyle(
+                          'TARGET STRAIN: ${targetStrain.toStringAsFixed(1)}',
+                          style: const TextStyle(
                             fontSize: 9.5,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.8,
@@ -137,12 +168,14 @@ class StrainScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '78% COMPLETED',
+                          hasStrain ? '$progressPercent% MET' : 'STANDBY',
                           style: TextStyle(
                             fontSize: 9.5,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.8,
-                            color: RecovaColors.kineticAmberGold,
+                            color: hasStrain
+                                ? RecovaColors.kineticAmberGold
+                                : RecovaColors.textMuted,
                           ),
                         ),
                       ],
@@ -151,7 +184,7 @@ class StrainScreen extends StatelessWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(3),
                       child: LinearProgressIndicator(
-                        value: dayStrain / targetStrain,
+                        value: progressRatio,
                         minHeight: 6,
                         backgroundColor: Colors.white.withValues(alpha: 0.06),
                         valueColor: const AlwaysStoppedAnimation<Color>(
@@ -165,7 +198,7 @@ class StrainScreen extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // ── Caloric Load ──
+          // ── Caloric & Step Load (100% Real from Health Connect) ──
           Row(
             children: [
               Expanded(
@@ -178,9 +211,9 @@ class StrainScreen extends StatelessWidget {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'ACTIVE CALORIES',
+                    children: [
+                      const Text(
+                        'ACTIVE ENERGY',
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
@@ -188,10 +221,14 @@ class StrainScreen extends StatelessWidget {
                           color: RecovaColors.textTertiary,
                         ),
                       ),
-                      SizedBox(height: 6),
+                      const SizedBox(height: 6),
                       Text(
-                        '$activeCalories kcal',
-                        style: TextStyle(
+                        activeCalories != null
+                            ? '$activeCalories kcal'
+                            : (totalCalories != null
+                                ? '$totalCalories kcal'
+                                : '--'),
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           color: RecovaColors.kineticAmberGold,
@@ -212,9 +249,9 @@ class StrainScreen extends StatelessWidget {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'TOTAL BURN',
+                    children: [
+                      const Text(
+                        'PEDOMETER STEPS',
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
@@ -222,10 +259,10 @@ class StrainScreen extends StatelessWidget {
                           color: RecovaColors.textTertiary,
                         ),
                       ),
-                      SizedBox(height: 6),
+                      const SizedBox(height: 6),
                       Text(
-                        '$totalCalories kcal',
-                        style: TextStyle(
+                        todaySteps != null ? '$todaySteps' : '--',
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           color: RecovaColors.textPrimary,
@@ -239,47 +276,7 @@ class StrainScreen extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // ── Heart Rate Zones ──
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: RecovaColors.surfaceElevation1,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: RecovaColors.borderSubtle),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'HEART RATE ZONE INTENSITY',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    color: RecovaColors.textTertiary,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                _buildZoneRow('Zone 5: Anaerobic (>172 bpm)', '4m', 0.08,
-                    RecovaColors.stressCrimson),
-                const SizedBox(height: 10),
-                _buildZoneRow('Zone 4: Threshold (155–172 bpm)', '18m', 0.28,
-                    RecovaColors.kineticAmber),
-                const SizedBox(height: 10),
-                _buildZoneRow('Zone 3: Aerobic (138–154 bpm)', '32m', 0.44,
-                    RecovaColors.kineticAmberGold),
-                const SizedBox(height: 10),
-                _buildZoneRow('Zone 2: Moderate (120–137 bpm)', '46m', 0.65,
-                    RecovaColors.recoveryEmerald),
-                const SizedBox(height: 10),
-                _buildZoneRow('Zone 1: Active Recovery (<120 bpm)', '1h 12m',
-                    0.85, RecovaColors.restorativeAzure),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // ── Activity Log ──
+          // ── Real Activity & Workout Log ──
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -292,8 +289,8 @@ class StrainScreen extends StatelessWidget {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text(
+                  children: [
+                    const Text(
                       'RECORDED WORKOUTS',
                       style: TextStyle(
                         fontSize: 10,
@@ -303,31 +300,56 @@ class StrainScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'FROM WEARABLE',
+                      workouts.isNotEmpty
+                          ? '${workouts.length} LOGGED'
+                          : 'AWAITING SENSOR',
                       style: TextStyle(
                         fontSize: 8.5,
                         fontWeight: FontWeight.w600,
-                        color: RecovaColors.textMuted,
+                        color: workouts.isNotEmpty
+                            ? RecovaColors.recoveryEmerald
+                            : RecovaColors.textMuted,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                _buildWorkoutItem(
-                  icon: Icons.directions_run,
-                  title: 'Outdoor Interval Run',
-                  time: '7:30 AM • 42 mins',
-                  strain: '8.6',
-                  avgHr: '158 bpm',
-                ),
-                const SizedBox(height: 10),
-                _buildWorkoutItem(
-                  icon: Icons.fitness_center,
-                  title: 'Strength Conditioning',
-                  time: 'Yesterday • 35 mins',
-                  strain: '5.2',
-                  avgHr: '132 bpm',
-                ),
+                if (workouts.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    alignment: Alignment.center,
+                    child: Column(
+                      children: const [
+                        Icon(Icons.directions_run,
+                            size: 28, color: RecovaColors.textMuted),
+                        SizedBox(height: 8),
+                        Text(
+                          'No workouts logged today.\nStart a workout on your CMF Watch or Nothing X app.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: RecovaColors.textMuted,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ...workouts.map((w) {
+                    final timeStr =
+                        '${w.startTime.hour.toString().padLeft(2, '0')}:${w.startTime.minute.toString().padLeft(2, '0')}';
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _buildWorkoutItem(
+                        icon: Icons.fitness_center,
+                        title: w.title,
+                        time: '$timeStr • ${w.durationMinutes} mins',
+                        strain: (w.durationMinutes * 0.15).clamp(1.0, 18.0).toStringAsFixed(1),
+                        avgHr: w.calories != null ? '${w.calories!.toInt()} kcal' : null,
+                      ),
+                    );
+                  }),
               ],
             ),
           ),
@@ -336,104 +358,84 @@ class StrainScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildZoneRow(
-      String label, String duration, double fraction, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 10,
-                color: RecovaColors.textSecondary,
-              ),
-            ),
-            Text(
-              duration,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(2),
-          child: LinearProgressIndicator(
-            value: fraction,
-            minHeight: 4,
-            backgroundColor: Colors.white.withValues(alpha: 0.05),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildWorkoutItem({
     required IconData icon,
     required String title,
     required String time,
     required String strain,
-    required String avgHr,
+    String? avgHr,
   }) {
-    return Row(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: RecovaColors.surfaceElevation3,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: RecovaColors.borderSubtle),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: RecovaColors.surfaceElevation2,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: RecovaColors.borderSubtle),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: RecovaColors.surfaceElevation3,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 18, color: RecovaColors.kineticAmberGold),
           ),
-          child: Icon(icon, size: 18, color: RecovaColors.kineticAmberGold),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: RecovaColors.textPrimary,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: RecovaColors.textPrimary,
+                  ),
                 ),
-              ),
-              Text(
-                '$time • Avg $avgHr',
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: RecovaColors.textMuted,
+                const SizedBox(height: 2),
+                Text(
+                  time,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: RecovaColors.textTertiary,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: RecovaColors.kineticAmberContainer,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: RecovaColors.kineticAmberBorder),
-          ),
-          child: Text(
-            '$strain STRAIN',
-            style: const TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              color: RecovaColors.kineticAmberGold,
+              ],
             ),
           ),
-        ),
-      ],
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.bolt,
+                      size: 13, color: RecovaColors.kineticAmberGold),
+                  Text(
+                    strain,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: RecovaColors.kineticAmberGold,
+                    ),
+                  ),
+                ],
+              ),
+              if (avgHr != null)
+                Text(
+                  avgHr,
+                  style: const TextStyle(
+                    fontSize: 9,
+                    color: RecovaColors.textMuted,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

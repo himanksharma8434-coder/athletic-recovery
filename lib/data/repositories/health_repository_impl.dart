@@ -263,25 +263,153 @@ class HealthRepositoryImpl implements HealthSourceRepository {
     final baseline = await _db.baselineDao.getLatestBaseline();
     final recordCount = await _db.healthRecordDao.getRecordCount();
 
-    if (metric == null) return null;
+    if (metric == null && baseline == null && recordCount == 0) return null;
+
+    final now = DateTime.now();
+    final todayStart = AppDateUtils.startOfDay(now);
 
     // Get the most recent sync timestamp
     DateTime? lastSync;
     final logs = await _db.syncDao.getRecentLogs(limit: 1);
     if (logs.isNotEmpty) lastSync = logs.first.timestamp;
 
+    // ── Real Steps & Calories ──
+    final todaySteps = await _db.healthRecordDao
+        .getTotalSteps(start: todayStart, end: now);
+    final activeCals = await _db.healthRecordDao
+        .getTotalCalories(start: todayStart, end: now, activeOnly: true);
+    final totalCals = await _db.healthRecordDao
+        .getTotalCalories(start: todayStart, end: now, activeOnly: false);
+
+    // ── Real Workouts ──
+    final rawWorkouts = await _db.healthRecordDao
+        .getWorkouts(start: todayStart, end: now);
+    final workouts = rawWorkouts.map((w) {
+      final name = w.unit.isNotEmpty && w.unit != 'UNKNOWN'
+          ? w.unit
+          : 'Cardio Session';
+      return WorkoutSessionSummary(
+        title: name,
+        durationMinutes: w.value.toInt(),
+        calories: w.valueSecondary,
+        startTime: w.startTime,
+      );
+    }).toList();
+
+    // ── Real HRV (SDNN) ──
+    final latestHrv = await _db.healthRecordDao.getLatestHrv(
+      start: AppDateUtils.daysAgo(1, from: now),
+      end: now,
+    );
+
+    // ── Real Sleep Stages Breakdown ──
+    final rawSleepStages = await _db.healthRecordDao.getSleepStages(
+      start: AppDateUtils.daysAgo(1, from: now),
+      end: now,
+    );
+    int deepMin = 0;
+    int remMin = 0;
+    int lightMin = 0;
+    int awakeMin = 0;
+    for (final s in rawSleepStages) {
+      switch (s.recordType) {
+        case 'SLEEP_DEEP':
+          deepMin += s.value.toInt();
+          break;
+        case 'SLEEP_REM':
+          remMin += s.value.toInt();
+          break;
+        case 'SLEEP_LIGHT':
+          lightMin += s.value.toInt();
+          break;
+        case 'SLEEP_AWAKE':
+          awakeMin += s.value.toInt();
+          break;
+      }
+    }
+    final sleepStages = (deepMin + remMin + lightMin + awakeMin) > 0
+        ? SleepStageBreakdown(
+            deepMinutes: deepMin,
+            remMinutes: remMin,
+            lightMinutes: lightMin,
+            awakeMinutes: awakeMin,
+          )
+        : null;
+
+    // ── Real Day Strain Computation (0 - 21 scale) ──
+    final hrRecords = await _db.healthRecordDao
+        .getHeartRates(start: todayStart, end: now);
+    double dayStrain = 0.0;
+    if (hrRecords.isNotEmpty && baseline?.restingHrBaseline7d != null) {
+      final rhr = baseline!.restingHrBaseline7d!;
+      final maxHr = metric?.estimatedVo2Max != null
+          ? (metric!.estimatedVo2Max! * rhr / 15.3)
+          : 190.0;
+      double accumulatedTrimp = 0.0;
+      for (final hr in hrRecords) {
+        if (hr.value > rhr && maxHr > rhr) {
+          final intensity = ((hr.value - rhr) / (maxHr - rhr)).clamp(0.0, 1.0);
+          accumulatedTrimp += intensity * intensity * 2.0;
+        }
+      }
+      dayStrain = (21.0 * (1.0 - (1.0 / (1.0 + 0.02 * accumulatedTrimp))))
+          .clamp(0.0, 21.0);
+    } else if (todaySteps > 0 || workouts.isNotEmpty) {
+      final workoutMins = workouts.fold<int>(0, (sum, w) => sum + w.durationMinutes);
+      final activityScore = (workoutMins * 1.5) + (todaySteps / 1000.0) * 0.8;
+      dayStrain = (21.0 * (1.0 - (1.0 / (1.0 + 0.03 * activityScore))))
+          .clamp(0.0, 21.0);
+    }
+
+    // ── Recommended Target Strain ──
+    double? targetStrain;
+    if (metric?.recoveryScore != null) {
+      final rec = metric!.recoveryScore!;
+      if (rec >= 67) {
+        targetStrain = 14.0 + ((rec - 67) / 33.0) * 4.0;
+      } else if (rec >= 34) {
+        targetStrain = 10.0 + ((rec - 34) / 33.0) * 3.9;
+      } else {
+        targetStrain = 6.0 + (rec / 34.0) * 3.9;
+      }
+    }
+
+    // ── 14-Day Historical Trend ──
+    final history = await _db.derivedMetricDao.getHistory(14);
+    final historyPoints = history
+        .where((m) => m.recoveryScore != null)
+        .map((m) => HistoricalScorePoint(
+              date: m.date,
+              score: m.recoveryScore!,
+            ))
+        .toList();
+
     return DerivedMetricSummary(
-      recoveryScore: metric.recoveryScore,
-      recoveryComponentRhr: metric.recoveryComponentRhr,
-      recoveryComponentSleep: metric.recoveryComponentSleep,
-      recoveryComponentSpo2: metric.recoveryComponentSpo2,
-      primaryFactor: metric.primaryFactor,
-      estimatedVo2Max: metric.estimatedVo2Max,
+      recoveryScore: metric?.recoveryScore,
+      recoveryComponentRhr: metric?.recoveryComponentRhr,
+      recoveryComponentSleep: metric?.recoveryComponentSleep,
+      recoveryComponentSpo2: metric?.recoveryComponentSpo2,
+      primaryFactor: metric?.primaryFactor,
+      estimatedVo2Max: metric?.estimatedVo2Max,
       restingHr: baseline?.restingHrBaseline7d,
+      baselineRestingHr: baseline?.restingHrBaseline30d ?? baseline?.restingHrBaseline7d,
       sleepHours: baseline?.sleepDurationBaseline7d != null
           ? baseline!.sleepDurationBaseline7d! / 60.0
           : null,
+      baselineSleepHours: baseline?.sleepDurationBaseline7d != null
+          ? baseline!.sleepDurationBaseline7d! / 60.0
+          : null,
       spo2: baseline?.spo2Baseline7d,
+      baselineSpo2: baseline?.spo2Baseline7d,
+      hrvMs: latestHrv,
+      dayStrain: dayStrain > 0.0 ? dayStrain : null,
+      targetStrain: targetStrain,
+      activeCalories: activeCals > 0.0 ? activeCals : null,
+      totalCalories: totalCals > 0.0 ? totalCals : null,
+      todaySteps: todaySteps > 0 ? todaySteps : null,
+      sleepStages: sleepStages,
+      workouts: workouts,
+      recoveryHistory14d: historyPoints,
       totalRecords: recordCount,
       lastSyncedAt: lastSync,
     );

@@ -3,15 +3,21 @@ import '../../core/theme/recova_colors.dart';
 
 class EcgWaveformCard extends StatelessWidget {
   final double? restingHr;
+  final double? respirationRate;
 
   const EcgWaveformCard({
     super.key,
     this.restingHr,
+    this.respirationRate,
   });
 
   @override
   Widget build(BuildContext context) {
-    final hr = restingHr?.toInt() ?? 62;
+    final hasHr = restingHr != null && restingHr! > 0;
+    final hrText = hasHr ? '${restingHr!.toInt()}' : '--';
+
+    final hasRpm = respirationRate != null && respirationRate! > 0;
+    final rpmText = hasRpm ? respirationRate!.toStringAsFixed(1) : '--';
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -40,19 +46,23 @@ class EcgWaveformCard extends StatelessWidget {
                   Container(
                     width: 5,
                     height: 5,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: RecovaColors.recoveryEmerald,
+                      color: hasHr
+                          ? RecovaColors.recoveryEmerald
+                          : RecovaColors.textMuted,
                     ),
                   ),
                   const SizedBox(width: 5),
-                  const Text(
-                    '25 HZ SENSOR',
+                  Text(
+                    hasHr ? 'HEALTH CONNECT LIVE' : 'SENSOR STANDBY',
                     style: TextStyle(
                       fontSize: 8.5,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.8,
-                      color: RecovaColors.textTertiary,
+                      color: hasHr
+                          ? RecovaColors.textTertiary
+                          : RecovaColors.textMuted,
                     ),
                   ),
                 ],
@@ -75,8 +85,11 @@ class EcgWaveformCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: RecovaColors.borderSubtle),
                     ),
-                    child: const Icon(Icons.favorite_outline,
-                        size: 16, color: RecovaColors.recoveryEmerald),
+                    child: Icon(Icons.favorite_outline,
+                        size: 16,
+                        color: hasHr
+                            ? RecovaColors.recoveryEmerald
+                            : RecovaColors.textMuted),
                   ),
                   const SizedBox(width: 10),
                   Column(
@@ -87,7 +100,7 @@ class EcgWaveformCard extends StatelessWidget {
                         textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(
-                            '$hr',
+                            hrText,
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -106,9 +119,9 @@ class EcgWaveformCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const Text(
-                        'RESTING VASCULAR',
-                        style: TextStyle(
+                      Text(
+                        hasHr ? 'RESTING VASCULAR' : 'NO PULSE LOGGED',
+                        style: const TextStyle(
                           fontSize: 8,
                           letterSpacing: 0.8,
                           color: RecovaColors.textMuted,
@@ -123,7 +136,7 @@ class EcgWaveformCard extends StatelessWidget {
                 width: 110,
                 height: 28,
                 child: CustomPaint(
-                  painter: _EcgSparklinePainter(),
+                  painter: _EcgSparklinePainter(active: hasHr),
                 ),
               ),
             ],
@@ -146,28 +159,31 @@ class EcgWaveformCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: RecovaColors.borderSubtle),
                     ),
-                    child: const Icon(Icons.air,
-                        size: 16, color: RecovaColors.restorativeAzure),
+                    child: Icon(Icons.air,
+                        size: 16,
+                        color: hasRpm
+                            ? RecovaColors.restorativeAzure
+                            : RecovaColors.textMuted),
                   ),
                   const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(
-                            '14.2',
-                            style: TextStyle(
+                            rpmText,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
                               letterSpacing: -0.5,
                               color: RecovaColors.textPrimary,
                             ),
                           ),
-                          SizedBox(width: 4),
-                          Text(
+                          const SizedBox(width: 4),
+                          const Text(
                             'RPM',
                             style: TextStyle(
                               fontSize: 9,
@@ -178,8 +194,8 @@ class EcgWaveformCard extends StatelessWidget {
                         ],
                       ),
                       Text(
-                        'RESPIRATION CYCLE',
-                        style: TextStyle(
+                        hasRpm ? 'RESPIRATION CYCLE' : 'NO RESPIRATION LOGGED',
+                        style: const TextStyle(
                           fontSize: 8,
                           letterSpacing: 0.8,
                           color: RecovaColors.textMuted,
@@ -192,17 +208,24 @@ class EcgWaveformCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: RecovaColors.recoveryEmeraldContainer,
+                  color: hasRpm
+                      ? RecovaColors.recoveryEmeraldContainer
+                      : RecovaColors.surfaceElevation3,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: RecovaColors.recoveryEmeraldBorder),
+                  border: Border.all(
+                      color: hasRpm
+                          ? RecovaColors.recoveryEmeraldBorder
+                          : RecovaColors.borderSubtle),
                 ),
-                child: const Text(
-                  'IN RANGE',
+                child: Text(
+                  hasRpm ? 'IN RANGE' : 'AWAITING SYNC',
                   style: TextStyle(
                     fontSize: 8.5,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
-                    color: RecovaColors.recoveryEmerald,
+                    color: hasRpm
+                        ? RecovaColors.recoveryEmerald
+                        : RecovaColors.textMuted,
                   ),
                 ),
               ),
@@ -215,10 +238,16 @@ class EcgWaveformCard extends StatelessWidget {
 }
 
 class _EcgSparklinePainter extends CustomPainter {
+  final bool active;
+
+  _EcgSparklinePainter({this.active = true});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = RecovaColors.recoveryEmerald
+      ..color = active
+          ? RecovaColors.recoveryEmerald
+          : Colors.white.withValues(alpha: 0.15)
       ..strokeWidth = 1.6
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
@@ -226,6 +255,14 @@ class _EcgSparklinePainter extends CustomPainter {
 
     final path = Path();
     final midY = size.height / 2;
+
+    if (!active) {
+      // Flat line when inactive
+      path.moveTo(0, midY);
+      path.lineTo(size.width, midY);
+      canvas.drawPath(path, paint);
+      return;
+    }
 
     path.moveTo(0, midY);
     path.lineTo(size.width * 0.25, midY);
@@ -248,5 +285,6 @@ class _EcgSparklinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _EcgSparklinePainter oldDelegate) =>
+      oldDelegate.active != active;
 }

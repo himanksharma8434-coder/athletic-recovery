@@ -11,15 +11,49 @@ import 'package:health/health.dart';
 class HealthTypes {
   HealthTypes._();
 
-  /// Types we request read permission for.
+  /// Comprehensive list of all health data types requested from Google Health Connect & HealthKit.
   static const List<HealthDataType> requestedTypes = [
+    // Cardiovascular
     HealthDataType.HEART_RATE,
     HealthDataType.RESTING_HEART_RATE,
+    HealthDataType.HEART_RATE_VARIABILITY_SDNN,
+    HealthDataType.HEART_RATE_VARIABILITY_RMSSD,
+    HealthDataType.WALKING_HEART_RATE,
+
+    // Sleep Architecture
     HealthDataType.SLEEP_SESSION,
+    HealthDataType.SLEEP_ASLEEP,
+    HealthDataType.SLEEP_AWAKE,
+    HealthDataType.SLEEP_DEEP,
+    HealthDataType.SLEEP_LIGHT,
+    HealthDataType.SLEEP_REM,
+
+    // Blood Oxygen & Respiration
     HealthDataType.BLOOD_OXYGEN,
+    HealthDataType.RESPIRATORY_RATE,
+
+    // Activity, Strain & Energy
     HealthDataType.STEPS,
     HealthDataType.WORKOUT,
+    HealthDataType.ACTIVE_ENERGY_BURNED,
     HealthDataType.TOTAL_CALORIES_BURNED,
+    HealthDataType.BASAL_ENERGY_BURNED,
+    HealthDataType.DISTANCE_DELTA,
+    HealthDataType.DISTANCE_WALKING_RUNNING,
+    HealthDataType.SPEED,
+    HealthDataType.FLIGHTS_CLIMBED,
+
+    // Biometrics & Body Vitals
+    HealthDataType.BODY_TEMPERATURE,
+    HealthDataType.SKIN_TEMPERATURE,
+    HealthDataType.BLOOD_GLUCOSE,
+    HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
+    HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
+    HealthDataType.WEIGHT,
+    HealthDataType.HEIGHT,
+    HealthDataType.BODY_MASS_INDEX,
+    HealthDataType.BODY_FAT_PERCENTAGE,
+    HealthDataType.WATER,
   ];
 
   /// All requested as READ-only.
@@ -30,9 +64,29 @@ class HealthTypes {
   static const List<HealthDataType> numericTypes = [
     HealthDataType.HEART_RATE,
     HealthDataType.RESTING_HEART_RATE,
+    HealthDataType.HEART_RATE_VARIABILITY_SDNN,
+    HealthDataType.HEART_RATE_VARIABILITY_RMSSD,
+    HealthDataType.WALKING_HEART_RATE,
     HealthDataType.BLOOD_OXYGEN,
+    HealthDataType.RESPIRATORY_RATE,
     HealthDataType.STEPS,
+    HealthDataType.ACTIVE_ENERGY_BURNED,
     HealthDataType.TOTAL_CALORIES_BURNED,
+    HealthDataType.BASAL_ENERGY_BURNED,
+    HealthDataType.DISTANCE_DELTA,
+    HealthDataType.DISTANCE_WALKING_RUNNING,
+    HealthDataType.SPEED,
+    HealthDataType.FLIGHTS_CLIMBED,
+    HealthDataType.BODY_TEMPERATURE,
+    HealthDataType.SKIN_TEMPERATURE,
+    HealthDataType.BLOOD_GLUCOSE,
+    HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
+    HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
+    HealthDataType.WEIGHT,
+    HealthDataType.HEIGHT,
+    HealthDataType.BODY_MASS_INDEX,
+    HealthDataType.BODY_FAT_PERCENTAGE,
+    HealthDataType.WATER,
   ];
 
   /// Maximum historical lookback on first sync (Health Connect allows ~30 days).

@@ -23,10 +23,15 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   /// Update the last synced timestamp for a specific record type.
   /// Only call this AFTER a successful write.
   Future<void> updateLastSyncedAt(String recordType, DateTime timestamp) async {
-    await into(syncMetadata).insertOnConflictUpdate(
-      SyncMetadataCompanion(
-        recordType: Value(recordType),
-        lastSyncedAt: Value(timestamp),
+    final companion = SyncMetadataCompanion(
+      recordType: Value(recordType),
+      lastSyncedAt: Value(timestamp),
+    );
+    await into(syncMetadata).insert(
+      companion,
+      onConflict: DoUpdate(
+        (_) => companion,
+        target: [syncMetadata.recordType],
       ),
     );
   }

@@ -14,9 +14,24 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final score = summary?.recoveryScore ?? 82.0;
-    final tier = RecoveryTier.fromScore(summary?.recoveryScore);
+    final score = summary?.recoveryScore;
+    final tier = RecoveryTier.fromScore(score);
     final vo2 = summary?.estimatedVo2Max;
+
+    // Convert real 14-day database history to chart spots
+    final history = summary?.recoveryHistory14d ?? [];
+    final List<FlSpot> spots = [];
+    if (history.isNotEmpty) {
+      final now = DateTime.now();
+      for (final h in history) {
+        final daysAgo = now.difference(h.date).inDays;
+        final x = (14 - daysAgo).clamp(0, 14).toDouble();
+        spots.add(FlSpot(x, h.score));
+      }
+      spots.sort((a, b) => a.x.compareTo(b.x));
+    } else if (score != null) {
+      spots.add(FlSpot(14, score));
+    }
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -81,7 +96,7 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   summary?.primaryFactor ??
-                      'Autonomic nervous system calibrated to baseline.',
+                      'Baselines calibrating. Pull biometrics to compute recovery breakdown.',
                   style: const TextStyle(
                     fontSize: 13,
                     fontStyle: FontStyle.italic,
@@ -92,30 +107,30 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
                 _buildMetricProgressRow(
                   label: 'RESTING HEART RATE',
                   weight: '50% WEIGHT',
-                  score: summary?.recoveryComponentRhr ?? 88.0,
+                  score: summary?.recoveryComponentRhr,
                   valueText: summary?.restingHr != null
                       ? '${summary!.restingHr!.toInt()} bpm'
-                      : '48 bpm',
+                      : '--',
                   color: RecovaColors.recoveryEmerald,
                 ),
                 const SizedBox(height: 14),
                 _buildMetricProgressRow(
-                  label: 'SLEEP DURATION & STAGES',
+                  label: 'SLEEP DURATION & ARCHITECTURE',
                   weight: '35% WEIGHT',
-                  score: summary?.recoveryComponentSleep ?? 85.0,
+                  score: summary?.recoveryComponentSleep,
                   valueText: summary?.sleepHours != null
                       ? '${summary!.sleepHours!.toStringAsFixed(1)} hrs'
-                      : '7.8 hrs',
+                      : '--',
                   color: RecovaColors.restorativeAzure,
                 ),
                 const SizedBox(height: 14),
                 _buildMetricProgressRow(
                   label: 'BLOOD OXYGEN (SPO2)',
                   weight: '15% WEIGHT',
-                  score: summary?.recoveryComponentSpo2 ?? 95.0,
+                  score: summary?.recoveryComponentSpo2,
                   valueText: summary?.spo2 != null
                       ? '${summary!.spo2!.toStringAsFixed(0)}%'
-                      : '98%',
+                      : '--',
                   color: RecovaColors.kineticAmberGold,
                 ),
               ],
@@ -123,7 +138,7 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // ── Estimated VO2 Max Card ──
+          // ── Estimated VO2 Max Card (100% Real Uth-Sørensen) ──
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -161,13 +176,15 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: RecovaColors.borderSubtle),
                       ),
-                      child: const Text(
-                        'CALCULATED',
+                      child: Text(
+                        vo2 != null ? 'CALCULATED' : 'AWAITING LOGS',
                         style: TextStyle(
                           fontSize: 8,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.8,
-                          color: RecovaColors.recoveryEmerald,
+                          color: vo2 != null
+                              ? RecovaColors.recoveryEmerald
+                              : RecovaColors.textMuted,
                         ),
                       ),
                     ),
@@ -179,7 +196,7 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
-                      vo2 != null ? vo2.toStringAsFixed(1) : '52.4',
+                      vo2 != null ? vo2.toStringAsFixed(1) : '--',
                       style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w300,
@@ -197,30 +214,35 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: RecovaColors.recoveryEmeraldContainer,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                            color: RecovaColors.recoveryEmeraldBorder),
-                      ),
-                      child: const Text(
-                        'SUPERIOR TIER',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: RecovaColors.recoveryEmerald,
+                    if (vo2 != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: RecovaColors.recoveryEmeraldContainer,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: RecovaColors.recoveryEmeraldBorder),
+                        ),
+                        child: Text(
+                          vo2 >= 50
+                              ? 'SUPERIOR TIER'
+                              : vo2 >= 42
+                                  ? 'EXCELLENT TIER'
+                                  : 'STANDARD TIER',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                            color: RecovaColors.recoveryEmerald,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  'Uth–Sørensen Formula: VO₂max ≈ 15.3 × (HRmax / HRrest)\nAutomatically calculated from resting HR baseline and workout peak HR via Health Connect. No manual profile input needed.',
+                  'Uth–Sørensen Formula: VO₂max ≈ 15.3 × (HRmax / HRrest)\nCalculated directly from resting HR baseline and workout peak HR via Health Connect.',
                   style: TextStyle(
                     fontSize: 11,
                     height: 1.4,
@@ -232,7 +254,7 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // ── 14-Day Recovery Trend Chart ──
+          // ── 14-Day Recovery Trend Chart (100% Real Database History) ──
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -245,8 +267,8 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text(
+                  children: [
+                    const Text(
                       '14-DAY RECOVERY TREND',
                       style: TextStyle(
                         fontSize: 10,
@@ -256,129 +278,132 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'AUTONOMIC BAND',
+                      spots.isNotEmpty
+                          ? '${spots.length} DAYS RECORDED'
+                          : 'CALIBRATING',
                       style: TextStyle(
                         fontSize: 8.5,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.8,
-                        color: RecovaColors.recoveryEmerald,
+                        color: spots.isNotEmpty
+                            ? RecovaColors.recoveryEmerald
+                            : RecovaColors.textMuted,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                SizedBox(
-                  height: 140,
-                  child: LineChart(
-                    LineChartData(
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        horizontalInterval: 25,
-                        getDrawingHorizontalLine: (value) => FlLine(
-                          color: Colors.white.withValues(alpha: 0.05),
-                          strokeWidth: 1,
-                        ),
+                if (spots.isEmpty)
+                  Container(
+                    height: 100,
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'No recovery history stored yet.\nSync daily with Health Connect to build your 14-day trend.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: RecovaColors.textMuted,
+                        height: 1.5,
                       ),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
-                        topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            interval: 25,
-                            reservedSize: 32,
-                            getTitlesWidget: (value, meta) => Text(
-                              '${value.toInt()}%',
-                              style: const TextStyle(
-                                fontSize: 8,
-                                color: RecovaColors.textMuted,
+                    ),
+                  )
+                else
+                  SizedBox(
+                    height: 140,
+                    child: LineChart(
+                      LineChartData(
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                          horizontalInterval: 25,
+                          getDrawingHorizontalLine: (value) => FlLine(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            strokeWidth: 1,
+                          ),
+                        ),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              interval: 25,
+                              reservedSize: 32,
+                              getTitlesWidget: (value, meta) => Text(
+                                '${value.toInt()}%',
+                                style: const TextStyle(
+                                  fontSize: 8,
+                                  color: RecovaColors.textMuted,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            interval: 3,
-                            getTitlesWidget: (value, meta) {
-                              const labels = [
-                                '14d', '11d', '8d', '5d', '2d', 'Today'
-                              ];
-                              final idx = (value / 2.5).clamp(0, 5).toInt();
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: Text(
-                                  labels[idx],
-                                  style: const TextStyle(
-                                    fontSize: 8.5,
-                                    color: RecovaColors.textMuted,
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              interval: 3,
+                              getTitlesWidget: (value, meta) {
+                                const labels = [
+                                  '14d', '11d', '8d', '5d', '2d', 'Today'
+                                ];
+                                final idx = (value / 2.5).clamp(0, 5).toInt();
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Text(
+                                    labels[idx],
+                                    style: const TextStyle(
+                                      fontSize: 8.5,
+                                      color: RecovaColors.textMuted,
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      minX: 0,
-                      maxX: 14,
-                      minY: 40,
-                      maxY: 100,
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: [
-                            const FlSpot(0, 72),
-                            const FlSpot(2, 68),
-                            const FlSpot(4, 76),
-                            const FlSpot(6, 84),
-                            const FlSpot(8, 79),
-                            const FlSpot(10, 85),
-                            const FlSpot(12, 81),
-                            FlSpot(14, score),
-                          ],
-                          isCurved: true,
-                          color: RecovaColors.recoveryEmerald,
-                          barWidth: 2.5,
-                          dotData: FlDotData(
-                            show: true,
-                            getDotPainter: (spot, percent, barData, index) {
-                              if (index == barData.spots.length - 1) {
-                                return FlDotCirclePainter(
-                                  radius: 4,
-                                  color: RecovaColors.recoveryEmerald,
-                                  strokeColor: Colors.white,
-                                  strokeWidth: 2,
                                 );
-                              }
-                              return FlDotCirclePainter(
-                                radius: 2,
-                                color: RecovaColors.recoveryEmerald,
-                                strokeWidth: 0,
-                              );
-                            },
-                          ),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                RecovaColors.recoveryEmerald
-                                    .withValues(alpha: 0.25),
-                                RecovaColors.recoveryEmerald
-                                    .withValues(alpha: 0.0),
-                              ],
+                              },
                             ),
                           ),
                         ),
-                      ],
+                        borderData: FlBorderData(show: false),
+                        minX: 0,
+                        maxX: 14,
+                        minY: 0,
+                        maxY: 100,
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: spots,
+                            isCurved: spots.length > 2,
+                            color: RecovaColors.recoveryEmerald,
+                            barWidth: 2.5,
+                            dotData: FlDotData(
+                              show: true,
+                              getDotPainter: (spot, percent, barData, index) {
+                                return FlDotCirclePainter(
+                                  radius: index == barData.spots.length - 1 ? 4 : 2,
+                                  color: RecovaColors.recoveryEmerald,
+                                  strokeColor: Colors.white,
+                                  strokeWidth: index == barData.spots.length - 1 ? 2 : 0,
+                                );
+                              },
+                            ),
+                            belowBarData: BarAreaData(
+                              show: true,
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  RecovaColors.recoveryEmerald
+                                      .withValues(alpha: 0.25),
+                                  RecovaColors.recoveryEmerald
+                                      .withValues(alpha: 0.0),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -390,42 +415,56 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
   Widget _buildMetricProgressRow({
     required String label,
     required String weight,
-    required double score,
+    required double? score,
     required String valueText,
     required Color color,
   }) {
+    final validScore = score != null;
+    final percent = (score ?? 0.0) / 100.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.8,
-                color: RecovaColors.textPrimary,
-              ),
-            ),
             Row(
               children: [
                 Text(
-                  valueText,
-                  style: TextStyle(
-                    fontSize: 11,
+                  label,
+                  style: const TextStyle(
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: color,
+                    letterSpacing: 0.8,
+                    color: RecovaColors.textSecondary,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Text(
                   weight,
                   style: const TextStyle(
                     fontSize: 8.5,
-                    fontWeight: FontWeight.w500,
                     color: RecovaColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                Text(
+                  validScore ? '${score.round()}%' : '--',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: validScore ? color : RecovaColors.textMuted,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  valueText,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: RecovaColors.textTertiary,
                   ),
                 ),
               ],
@@ -434,12 +473,14 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         ClipRRect(
-          borderRadius: BorderRadius.circular(3),
-          child: LinearProgressIndicator(
-            value: (score / 100).clamp(0.0, 1.0),
-            minHeight: 5,
-            backgroundColor: Colors.white.withValues(alpha: 0.06),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
+          borderRadius: BorderRadius.circular(2),
+          child: SizedBox(
+            height: 4,
+            child: LinearProgressIndicator(
+              value: validScore ? percent.clamp(0.0, 1.0) : 0.0,
+              backgroundColor: Colors.white.withValues(alpha: 0.06),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
           ),
         ),
       ],

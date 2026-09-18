@@ -97,7 +97,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         RecoveryDeepDiveScreen(
                           summary: summary,
                         ),
-                        const StrainScreen(),
+                        StrainScreen(
+                          summary: summary,
+                        ),
                         SleepScreen(
                           summary: summary,
                         ),
