@@ -19,20 +19,49 @@ class HealthPlatformDatasource {
 
   /// Request read authorization for all configured data types.
   Future<bool> requestPermissions() async {
-    final granted = await health.requestAuthorization(
-      HealthTypes.requestedTypes,
-      permissions: HealthTypes.permissions,
-    );
-    return granted;
+    await configure();
+    try {
+      await health.requestAuthorization(
+        HealthTypes.requestedTypes,
+        permissions: HealthTypes.permissions,
+      );
+    } catch (_) {
+      try {
+        await health.requestAuthorization(
+          HealthTypes.coreTypes,
+          permissions: HealthTypes.corePermissions,
+        );
+      } catch (_) {}
+    }
+
+    return await hasPermissions();
   }
 
-  /// Check whether we have all required permissions.
+  /// Check whether we have permission to read health data.
   Future<bool> hasPermissions() async {
-    final result = await health.hasPermissions(
-      HealthTypes.requestedTypes,
-      permissions: HealthTypes.permissions,
-    );
-    return result ?? false;
+    try {
+      // 1. Check if core types are granted
+      final coreResult = await health.hasPermissions(
+        HealthTypes.coreTypes,
+        permissions: HealthTypes.corePermissions,
+      );
+      if (coreResult == true) return true;
+
+      // 2. Check individual key types
+      for (final type in [
+        HealthDataType.HEART_RATE,
+        HealthDataType.STEPS,
+        HealthDataType.SLEEP_SESSION,
+        HealthDataType.RESTING_HEART_RATE,
+      ]) {
+        final granted = await health.hasPermissions(
+          [type],
+          permissions: [HealthDataAccess.READ],
+        );
+        if (granted == true) return true;
+      }
+    } catch (_) {}
+    return false;
   }
 
   /// Check and request background-read permission (Android 14+ only).

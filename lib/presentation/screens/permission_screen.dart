@@ -8,8 +8,36 @@ import 'main_shell_screen.dart';
 
 /// Kinetic Obsidian styled Permission onboarding screen.
 /// Explains why health data is needed and requests authorization.
-class PermissionScreen extends StatelessWidget {
+class PermissionScreen extends StatefulWidget {
   const PermissionScreen({super.key});
+
+  @override
+  State<PermissionScreen> createState() => _PermissionScreenState();
+}
+
+class _PermissionScreenState extends State<PermissionScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Initial check in case permissions were already granted
+    context.read<HealthPermissionCubit>().checkPermissions();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // When returning from Health Connect settings, auto-verify permissions
+      context.read<HealthPermissionCubit>().checkPermissions();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +67,8 @@ class PermissionScreen extends StatelessWidget {
                     border: Border.all(color: RecovaColors.borderMedium),
                     boxShadow: [
                       BoxShadow(
-                        color: RecovaColors.recoveryEmerald.withValues(alpha: 0.15),
+                        color:
+                            RecovaColors.recoveryEmerald.withValues(alpha: 0.15),
                         blurRadius: 32,
                         spreadRadius: 4,
                       ),
@@ -109,9 +138,9 @@ class PermissionScreen extends StatelessWidget {
                   label: 'Respiration, Vitals & Temperature',
                   accentColor: RecovaColors.neuralViolet,
                 ),
-                const SizedBox(height: 36),
+                const SizedBox(height: 32),
 
-                // Connect button
+                // Primary Connect button
                 BlocBuilder<HealthPermissionCubit, HealthPermissionState>(
                   builder: (context, state) {
                     final isLoading = state is HealthPermissionRequesting;
@@ -152,19 +181,48 @@ class PermissionScreen extends StatelessWidget {
                     );
                   },
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
 
-                // Denied message
+                // Secondary Fallback: Direct Proceed / Verify button
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: TextButton(
+                    onPressed: () {
+                      // Navigate straight to dashboard
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                            builder: (_) => const MainShellScreen()),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: RecovaColors.textTertiary,
+                    ),
+                    child: const Text(
+                      'I\'VE ALREADY GRANTED ACCESS • PROCEED',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Denied or Notice message
                 BlocBuilder<HealthPermissionCubit, HealthPermissionState>(
                   builder: (context, state) {
                     if (state is HealthPermissionDenied) {
-                      return Text(
-                        state.message,
-                        style: const TextStyle(
-                          color: RecovaColors.stressCrimson,
-                          fontSize: 11,
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          state.message,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: RecovaColors.kineticAmberGold,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
                       );
                     }
                     return const SizedBox.shrink();
@@ -193,30 +251,24 @@ class _DataTypeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
         color: RecovaColors.surfaceElevation1,
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: RecovaColors.borderSubtle),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: accentColor),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: RecovaColors.textPrimary,
-              ),
+          Icon(icon, size: 16, color: accentColor),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: RecovaColors.textPrimary,
             ),
-          ),
-          Icon(
-            Icons.check_circle_outline,
-            size: 16,
-            color: RecovaColors.textMuted,
           ),
         ],
       ),
