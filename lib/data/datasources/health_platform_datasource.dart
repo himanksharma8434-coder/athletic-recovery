@@ -17,20 +17,40 @@ class HealthPlatformDatasource {
     await health.configure();
   }
 
+  /// Get the subset of requested types that are valid and supported on this platform.
+  List<HealthDataType> getAvailableTypes() {
+    return HealthTypes.platformRequestedTypes
+        .where((type) => health.isDataTypeAvailable(type))
+        .toList();
+  }
+
+  /// Get the subset of core types that are valid on this platform.
+  List<HealthDataType> getAvailableCoreTypes() {
+    return HealthTypes.coreTypes
+        .where((type) => health.isDataTypeAvailable(type))
+        .toList();
+  }
+
   /// Request read authorization for all configured data types.
   Future<bool> requestPermissions() async {
     await configure();
     try {
-      await health.requestAuthorization(
-        HealthTypes.requestedTypes,
-        permissions: HealthTypes.permissions,
+      final available = getAvailableTypes();
+      final perms = available.map((_) => HealthDataAccess.READ).toList();
+      final granted = await health.requestAuthorization(
+        available,
+        permissions: perms,
       );
+      if (granted == true) return true;
     } catch (_) {
       try {
-        await health.requestAuthorization(
-          HealthTypes.coreTypes,
-          permissions: HealthTypes.corePermissions,
+        final coreAvailable = getAvailableCoreTypes();
+        final corePerms = coreAvailable.map((_) => HealthDataAccess.READ).toList();
+        final coreGranted = await health.requestAuthorization(
+          coreAvailable,
+          permissions: corePerms,
         );
+        if (coreGranted == true) return true;
       } catch (_) {}
     }
 
@@ -41,24 +61,29 @@ class HealthPlatformDatasource {
   Future<bool> hasPermissions() async {
     try {
       // 1. Check if core types are granted
+      final coreAvailable = getAvailableCoreTypes();
+      final corePerms = coreAvailable.map((_) => HealthDataAccess.READ).toList();
       final coreResult = await health.hasPermissions(
-        HealthTypes.coreTypes,
-        permissions: HealthTypes.corePermissions,
+        coreAvailable,
+        permissions: corePerms,
       );
       if (coreResult == true) return true;
 
-      // 2. Check individual key types
-      for (final type in [
+      // 2. Check individual key types supported on this platform
+      final keyTypes = [
         HealthDataType.HEART_RATE,
         HealthDataType.STEPS,
-        HealthDataType.SLEEP_SESSION,
         HealthDataType.RESTING_HEART_RATE,
-      ]) {
-        final granted = await health.hasPermissions(
-          [type],
-          permissions: [HealthDataAccess.READ],
-        );
-        if (granted == true) return true;
+        if (Platform.isAndroid) HealthDataType.SLEEP_SESSION else HealthDataType.SLEEP_ASLEEP,
+      ];
+      for (final type in keyTypes) {
+        if (health.isDataTypeAvailable(type)) {
+          final granted = await health.hasPermissions(
+            [type],
+            permissions: [HealthDataAccess.READ],
+          );
+          if (granted == true) return true;
+        }
       }
     } catch (_) {}
     return false;
@@ -69,12 +94,10 @@ class HealthPlatformDatasource {
   Future<bool> requestBackgroundReadPermission() async {
     if (!Platform.isAndroid) return false;
     try {
-      // Store the result in shared preferences for the background worker
-      final granted = await health.requestAuthorization(
-        HealthTypes.requestedTypes,
-        permissions: HealthTypes.permissions,
-      );
+      final isAvail = await health.isHealthDataInBackgroundAvailable();
+      if (!isAvail) return false;
 
+      final granted = await health.requestHealthDataInBackgroundAuthorization();
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('backgroundReadGranted', granted);
       return granted;
@@ -85,6 +108,11 @@ class HealthPlatformDatasource {
 
   /// Check if background read was previously granted.
   Future<bool> hasBackgroundReadPermission() async {
+    if (!Platform.isAndroid) return false;
+    try {
+      final isAuth = await health.isHealthDataInBackgroundAuthorized();
+      if (isAuth) return true;
+    } catch (_) {}
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('backgroundReadGranted') ?? false;
   }
@@ -93,32 +121,81 @@ class HealthPlatformDatasource {
   Future<List<HealthRecord>> fetchRecords({
     required DateTime startTime,
     required DateTime endTime,
+    List<HealthDataType>? types,
   }) async {
-    final dataPoints = await health.getHealthDataFromTypes(
-      types: HealthTypes.requestedTypes,
-      startTime: startTime,
-      endTime: endTime,
-    );
+    final candidateTypes = types ?? getAvailableTypes();
+    final validTypes = candidateTypes
+        .where((t) => health.isDataTypeAvailable(t))
+        .toList();
 
-    // Remove duplicates from the health package
-    final unique = health.removeDuplicates(dataPoints);
+    if (validTypes.isEmpty) return [];
 
-    return unique.map(_toHealthRecord).toList();
+    try {
+      final dataPoints = await health.getHealthDataFromTypes(
+        types: validTypes,
+        startTime: startTime,
+        endTime: endTime,
+      );
+
+      final unique = health.removeDuplicates(dataPoints);
+      return unique.map(_toHealthRecord).toList();
+    } catch (e) {
+      // Fallback: fetch per-type so one restricted type does not fail the entire batch
+      final List<HealthRecord> allRecords = [];
+      for (final type in validTypes) {
+        final records = await fetchRecordsForType(
+          type: type,
+          startTime: startTime,
+          endTime: endTime,
+        );
+        allRecords.addAll(records);
+      }
+      return allRecords;
+    }
+  }
+
+  /// Fetch health data for a single type safely without throwing.
+  Future<List<HealthRecord>> fetchRecordsForType({
+    required HealthDataType type,
+    required DateTime startTime,
+    required DateTime endTime,
+  }) async {
+    if (!health.isDataTypeAvailable(type)) return [];
+
+    try {
+      final dataPoints = await health.getHealthDataFromTypes(
+        types: [type],
+        startTime: startTime,
+        endTime: endTime,
+      );
+
+      final unique = health.removeDuplicates(dataPoints);
+      return unique.map(_toHealthRecord).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   /// Convert a platform HealthDataPoint to our domain entity.
   HealthRecord _toHealthRecord(HealthDataPoint point) {
     double value;
     double? valueSecondary;
+    String unit = point.unit.name;
 
     // Extract numeric value based on the data point type
     final numValue = point.value;
     if (numValue is NumericHealthValue) {
       value = numValue.numericValue.toDouble();
+    } else if (numValue is WorkoutHealthValue) {
+      // For workouts: duration in minutes as primary value,
+      // calories as secondary, and exercise type as unit
+      value = point.dateTo.difference(point.dateFrom).inMinutes.toDouble();
+      valueSecondary = numValue.totalEnergyBurned?.toDouble();
+      unit = numValue.workoutActivityType.name;
     } else if (numValue is ElectrocardiogramHealthValue) {
       value = numValue.voltageValues.length.toDouble();
     } else {
-      // For workout/sleep sessions, use duration in minutes
+      // For sleep sessions and other non-numeric types, use duration in minutes
       value = point.dateTo.difference(point.dateFrom).inMinutes.toDouble();
     }
 
@@ -126,7 +203,7 @@ class HealthPlatformDatasource {
       recordType: point.type.name,
       value: value,
       valueSecondary: valueSecondary,
-      unit: point.unit.name,
+      unit: unit,
       startTime: point.dateFrom,
       endTime: point.dateTo,
       sourceId: point.sourceName,
@@ -138,13 +215,15 @@ class HealthPlatformDatasource {
   /// Used for age-based HRmax fallback without asking the user manually.
   Future<DateTime?> fetchDateOfBirth() async {
     try {
-      final records = await health.getHealthDataFromTypes(
-        types: [HealthDataType.BIRTH_DATE],
-        startTime: DateTime(1900),
-        endTime: DateTime.now(),
-      );
-      if (records.isNotEmpty) {
-        return records.first.dateFrom;
+      if (health.isDataTypeAvailable(HealthDataType.BIRTH_DATE)) {
+        final records = await health.getHealthDataFromTypes(
+          types: [HealthDataType.BIRTH_DATE],
+          startTime: DateTime(1900),
+          endTime: DateTime.now(),
+        );
+        if (records.isNotEmpty) {
+          return records.first.dateFrom;
+        }
       }
     } catch (_) {
       // Platform doesn't support reading birth date directly
