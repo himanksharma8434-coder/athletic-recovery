@@ -65,8 +65,10 @@ class HealthRepositoryImpl implements HealthSourceRepository {
     try {
       await _platform.configure();
 
-      // For each health data type, do a delta sync
-      for (final type in HealthTypes.requestedTypes) {
+      final typesToSync = _platform.getAvailableTypes();
+
+      // For each available health data type, do an isolated delta sync
+      for (final type in typesToSync) {
         final typeName = type.name;
         final lastSynced = await syncDao.getLastSyncedAt(typeName);
 
@@ -74,35 +76,37 @@ class HealthRepositoryImpl implements HealthSourceRepository {
         final startTime = lastSynced ??
             now.subtract(HealthTypes.initialLookback);
 
-        final records = await _platform.fetchRecords(
-          startTime: startTime,
-          endTime: now,
-        );
+        try {
+          final records = await _platform.fetchRecordsForType(
+            type: type,
+            startTime: startTime,
+            endTime: now,
+          );
 
-        // Filter to only this type's records
-        final typeRecords =
-            records.where((r) => r.recordType == typeName).toList();
+          if (records.isNotEmpty) {
+            // Upsert into Drift
+            final companions = records
+                .map((r) => RawHealthRecordsCompanion(
+                      recordType: Value(r.recordType),
+                      value: Value(r.value),
+                      valueSecondary: Value(r.valueSecondary),
+                      unit: Value(r.unit),
+                      startTime: Value(r.startTime),
+                      endTime: Value(r.endTime),
+                      sourceId: Value(r.sourceId),
+                      syncedAt: Value(r.syncedAt),
+                    ))
+                .toList();
 
-        if (typeRecords.isNotEmpty) {
-          // Upsert into Drift
-          final companions = typeRecords
-              .map((r) => RawHealthRecordsCompanion(
-                    recordType: Value(r.recordType),
-                    value: Value(r.value),
-                    valueSecondary: Value(r.valueSecondary),
-                    unit: Value(r.unit),
-                    startTime: Value(r.startTime),
-                    endTime: Value(r.endTime),
-                    sourceId: Value(r.sourceId),
-                    syncedAt: Value(r.syncedAt),
-                  ))
-              .toList();
+            await recordDao.upsertRecords(companions);
+            totalWritten += records.length;
 
-          await recordDao.upsertRecords(companions);
-          totalWritten += typeRecords.length;
-
-          // Update lastSyncedAt ONLY after successful write
-          await syncDao.updateLastSyncedAt(typeName, now);
+            // Update lastSyncedAt ONLY after successful write
+            await syncDao.updateLastSyncedAt(typeName, now);
+          }
+        } catch (_) {
+          // If a single type fails (e.g. permission denied or unsupported on device),
+          // keep syncing remaining types.
         }
       }
 
@@ -213,13 +217,18 @@ class HealthRepositoryImpl implements HealthSourceRepository {
     );
 
     // ── Recovery Score ──
-    // Get today's latest RHR
-    final todayRhrRecords = await recordDao.getRecordsByType(
-      'RESTING_HEART_RATE',
+    // Get today's latest RHR (or fallback to today's minimum HR if only continuous heart rate is logged)
+    final todayRhrRecords = await recordDao.getRestingHrRecords(
       start: today,
       end: now,
     );
-    final todayRhr = todayRhrRecords.isEmpty ? null : todayRhrRecords.last.value;
+    double? todayRhr;
+    final rhrOnly = todayRhrRecords.where((r) => r.recordType == 'RESTING_HEART_RATE');
+    if (rhrOnly.isNotEmpty) {
+      todayRhr = rhrOnly.last.value;
+    } else if (todayRhrRecords.isNotEmpty) {
+      todayRhr = todayRhrRecords.map((r) => r.value).reduce((a, b) => a < b ? a : b);
+    }
 
     // Get last night's sleep
     final yesterday = today.subtract(const Duration(days: 1));
@@ -384,6 +393,31 @@ class HealthRepositoryImpl implements HealthSourceRepository {
             ))
         .toList();
 
+    // ── Today's Actual Resting HR (not baseline average) ──
+    final todayRhr = await _db.healthRecordDao.getTodayRestingHr(
+      start: todayStart,
+      end: now,
+    );
+
+    // ── Last Night's Actual Sleep (not 7-day average) ──
+    // Search from yesterday 6pm to today noon to capture overnight sleep
+    final sleepSearchStart = todayStart.subtract(const Duration(hours: 6));
+    final sleepSearchEnd = todayStart.add(const Duration(hours: 12));
+    final lastNightSleep = await _db.healthRecordDao.getLastNightSleep(
+      start: sleepSearchStart,
+      end: sleepSearchEnd,
+    );
+    final actualSleepMinutes = lastNightSleep?.value;
+    final actualSleepHours = actualSleepMinutes != null
+        ? actualSleepMinutes / 60.0
+        : null;
+
+    // ── Today's Actual SpO2 (not 7-day average) ──
+    final todaySpo2 = await _db.healthRecordDao.getTodayLatestSpo2(
+      start: todayStart,
+      end: now,
+    );
+
     return DerivedMetricSummary(
       recoveryScore: metric?.recoveryScore,
       recoveryComponentRhr: metric?.recoveryComponentRhr,
@@ -391,15 +425,15 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       recoveryComponentSpo2: metric?.recoveryComponentSpo2,
       primaryFactor: metric?.primaryFactor,
       estimatedVo2Max: metric?.estimatedVo2Max,
-      restingHr: baseline?.restingHrBaseline7d,
+      restingHr: todayRhr ?? baseline?.restingHrBaseline7d,
       baselineRestingHr: baseline?.restingHrBaseline30d ?? baseline?.restingHrBaseline7d,
-      sleepHours: baseline?.sleepDurationBaseline7d != null
+      sleepHours: actualSleepHours ?? (baseline?.sleepDurationBaseline7d != null
           ? baseline!.sleepDurationBaseline7d! / 60.0
-          : null,
+          : null),
       baselineSleepHours: baseline?.sleepDurationBaseline7d != null
           ? baseline!.sleepDurationBaseline7d! / 60.0
           : null,
-      spo2: baseline?.spo2Baseline7d,
+      spo2: todaySpo2 ?? baseline?.spo2Baseline7d,
       baselineSpo2: baseline?.spo2Baseline7d,
       hrvMs: latestHrv,
       dayStrain: dayStrain > 0.0 ? dayStrain : null,

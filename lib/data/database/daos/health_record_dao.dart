@@ -100,7 +100,8 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
   }) async {
     return (select(rawHealthRecords)
           ..where((r) =>
-              r.recordType.equals('SLEEP_SESSION') &
+              (r.recordType.equals('SLEEP_SESSION') |
+                  r.recordType.equals('SLEEP_ASLEEP')) &
               r.startTime.isBiggerOrEqualValue(start) &
               r.endTime.isSmallerOrEqualValue(end))
           ..orderBy([(r) => OrderingTerm.asc(r.startTime)]))
@@ -193,6 +194,8 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Get sleep stages records within a date range.
+  /// Only returns actual stage breakdowns (deep, light, rem, awake),
+  /// NOT session-level records (SLEEP_SESSION, SLEEP_ASLEEP).
   Future<List<RawHealthRecord>> getSleepStages({
     required DateTime start,
     required DateTime end,
@@ -202,9 +205,7 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
               (r.recordType.equals('SLEEP_DEEP') |
                   r.recordType.equals('SLEEP_LIGHT') |
                   r.recordType.equals('SLEEP_REM') |
-                  r.recordType.equals('SLEEP_AWAKE') |
-                  r.recordType.equals('SLEEP_ASLEEP') |
-                  r.recordType.equals('SLEEP_SESSION')) &
+                  r.recordType.equals('SLEEP_AWAKE')) &
               r.startTime.isBiggerOrEqualValue(start) &
               r.endTime.isSmallerOrEqualValue(end))
           ..orderBy([(r) => OrderingTerm.asc(r.startTime)]))
@@ -223,5 +224,68 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
               r.endTime.isSmallerOrEqualValue(end))
           ..orderBy([(r) => OrderingTerm.asc(r.startTime)]))
         .get();
+  }
+
+  /// Get last night's sleep session (most recent SLEEP_SESSION or SLEEP_ASLEEP).
+  /// Searches from [start] to [end] for the latest session-level sleep record.
+  Future<RawHealthRecord?> getLastNightSleep({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final records = await (select(rawHealthRecords)
+          ..where((r) =>
+              (r.recordType.equals('SLEEP_SESSION') |
+                  r.recordType.equals('SLEEP_ASLEEP')) &
+              r.startTime.isBiggerOrEqualValue(start) &
+              r.endTime.isSmallerOrEqualValue(end))
+          ..orderBy([(r) => OrderingTerm.desc(r.startTime)])
+          ..limit(1))
+        .get();
+    return records.isEmpty ? null : records.first;
+  }
+
+  /// Get today's latest SpO2 reading.
+  Future<double?> getTodayLatestSpo2({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final records = await (select(rawHealthRecords)
+          ..where((r) =>
+              r.recordType.equals('BLOOD_OXYGEN') &
+              r.startTime.isBiggerOrEqualValue(start) &
+              r.endTime.isSmallerOrEqualValue(end))
+          ..orderBy([(r) => OrderingTerm.desc(r.startTime)])
+          ..limit(1))
+        .get();
+    return records.isEmpty ? null : records.first.value;
+  }
+
+  /// Get today's resting heart rate.
+  /// Prefers RESTING_HEART_RATE records, falls back to minimum HEART_RATE.
+  Future<double?> getTodayRestingHr({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    // First try explicit RESTING_HEART_RATE records
+    final rhrRecords = await (select(rawHealthRecords)
+          ..where((r) =>
+              r.recordType.equals('RESTING_HEART_RATE') &
+              r.startTime.isBiggerOrEqualValue(start) &
+              r.endTime.isSmallerOrEqualValue(end))
+          ..orderBy([(r) => OrderingTerm.desc(r.startTime)])
+          ..limit(1))
+        .get();
+    if (rhrRecords.isNotEmpty) return rhrRecords.first.value;
+
+    // Fallback: minimum HEART_RATE value today
+    final hrRecords = await (select(rawHealthRecords)
+          ..where((r) =>
+              r.recordType.equals('HEART_RATE') &
+              r.startTime.isBiggerOrEqualValue(start) &
+              r.endTime.isSmallerOrEqualValue(end))
+          ..orderBy([(r) => OrderingTerm.asc(r.value)])
+          ..limit(1))
+        .get();
+    return hrRecords.isEmpty ? null : hrRecords.first.value;
   }
 }
