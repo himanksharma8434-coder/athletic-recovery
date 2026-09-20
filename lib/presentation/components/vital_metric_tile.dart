@@ -21,11 +21,16 @@ class VitalMetricTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // In Nothing X monochrome style, default to cool silver/white unless explicit critical alert
+    final effectiveDeltaColor = deltaColor == RecovaColors.nothingRed || deltaColor == RecovaColors.stressCrimson
+        ? RecovaColors.nothingRed
+        : RecovaColors.textSecondary;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: RecovaColors.surfaceElevation1,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: RecovaColors.borderSubtle),
       ),
       child: Column(
@@ -35,21 +40,25 @@ class VitalMetricTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 12, color: RecovaColors.textTertiary),
+                Icon(icon, size: 11, color: RecovaColors.textTertiary),
                 const SizedBox(width: 4),
               ],
-              Text(
-                label.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 8.5,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                  color: RecovaColors.textTertiary,
+              Flexible(
+                child: Text(
+                  label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.1,
+                    color: RecovaColors.textTertiary,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -58,32 +67,55 @@ class VitalMetricTile extends StatelessWidget {
               Text(
                 value,
                 style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: -0.5,
                   color: RecovaColors.textPrimary,
                 ),
               ),
-              const SizedBox(width: 2),
-              Text(
-                unit,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w400,
-                  color: RecovaColors.textTertiary,
+              if (unit.isNotEmpty) ...[
+                const SizedBox(width: 2),
+                Text(
+                  unit,
+                  style: const TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w500,
+                    color: RecovaColors.textTertiary,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            deltaText,
-            style: TextStyle(
-              fontSize: 8.5,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
-              color: deltaColor ?? RecovaColors.recoveryEmerald,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (effectiveDeltaColor == RecovaColors.nothingRed) ...[
+                Container(
+                  width: 4,
+                  height: 4,
+                  margin: const EdgeInsets.only(right: 3),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: RecovaColors.nothingRed,
+                  ),
+                ),
+              ],
+              Flexible(
+                child: Text(
+                  deltaText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.4,
+                    color: effectiveDeltaColor,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

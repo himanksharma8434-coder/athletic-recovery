@@ -41,7 +41,7 @@ class BentoTelemetryPods extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: RecovaColors.surfaceElevation1,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: RecovaColors.borderSubtle),
             ),
             child: Column(
@@ -53,7 +53,7 @@ class BentoTelemetryPods extends StatelessWidget {
                     Row(
                       children: [
                         Icon(Icons.bolt,
-                            size: 15, color: RecovaColors.kineticAmberGold),
+                            size: 14, color: RecovaColors.monochromeWhite),
                         SizedBox(width: 4),
                         Text(
                           'DAY STRAIN',
@@ -109,36 +109,31 @@ class BentoTelemetryPods extends StatelessWidget {
                               : 'LIGHT LOAD')
                       : 'NO LOAD RECORDED',
                   style: TextStyle(
-                    fontSize: 9,
+                    fontSize: 8.5,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.8,
                     color: hasStrain
-                        ? RecovaColors.kineticAmberGold
+                        ? RecovaColors.textSecondary
                         : RecovaColors.textMuted,
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Progress Bar with target marker
+                // Monochrome Progress Bar
                 Stack(
                   children: [
                     Container(
-                      height: 4,
+                      height: 3.5,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.06),
+                        color: Colors.white.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                     FractionallySizedBox(
                       widthFactor: strainPercent,
                       child: Container(
-                        height: 4,
+                        height: 3.5,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              RecovaColors.kineticAmberLight,
-                              RecovaColors.kineticAmberGold,
-                            ],
-                          ),
+                          color: RecovaColors.monochromeWhite,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -157,7 +152,7 @@ class BentoTelemetryPods extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: RecovaColors.surfaceElevation1,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: RecovaColors.borderSubtle),
             ),
             child: Column(
@@ -169,7 +164,7 @@ class BentoTelemetryPods extends StatelessWidget {
                     Row(
                       children: const [
                         Icon(Icons.bedtime,
-                            size: 15, color: RecovaColors.restorativeAzure),
+                            size: 14, color: RecovaColors.monochromeSilver),
                         SizedBox(width: 4),
                         Text(
                           'SLEEP',
@@ -187,7 +182,7 @@ class BentoTelemetryPods extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 8.5,
                         fontWeight: FontWeight.w600,
-                        color: RecovaColors.restorativeAzure,
+                        color: RecovaColors.textSecondary,
                       ),
                     ),
                   ],
@@ -211,7 +206,7 @@ class BentoTelemetryPods extends StatelessWidget {
                       Text(
                         '${sleepM}m',
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.w300,
                           color: RecovaColors.textSecondary,
                         ),
@@ -227,22 +222,20 @@ class BentoTelemetryPods extends StatelessWidget {
                           : 'SLEEP DEFICIT')
                       : 'AWAITING SLEEP LOG',
                   style: TextStyle(
-                    fontSize: 9,
+                    fontSize: 8.5,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.8,
                     color: hasSleep
-                        ? (sleep >= baselineH
-                            ? RecovaColors.recoveryEmerald
-                            : RecovaColors.kineticAmberGold)
+                        ? RecovaColors.textSecondary
                         : RecovaColors.textMuted,
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Real Stage breakdown or single bar
+                // Monochrome Stage breakdown
                 ClipRRect(
                   borderRadius: BorderRadius.circular(2),
                   child: SizedBox(
-                    height: 4,
+                    height: 3.5,
                     child: (sleepStages != null && sleepStages!.hasStageData)
                         ? Row(
                             children: [
@@ -250,33 +243,31 @@ class BentoTelemetryPods extends StatelessWidget {
                                 Expanded(
                                   flex: sleepStages!.deepMinutes,
                                   child: Container(
-                                      color: RecovaColors.restorativeAzure),
+                                      color: RecovaColors.monochromeWhite),
                                 ),
                               if (sleepStages!.remMinutes > 0)
                                 Expanded(
                                   flex: sleepStages!.remMinutes,
                                   child: Container(
-                                      color: RecovaColors.neuralViolet),
+                                      color: RecovaColors.monochromeSilver),
                                 ),
                               if (sleepStages!.lightMinutes > 0)
                                 Expanded(
                                   flex: sleepStages!.lightMinutes,
                                   child: Container(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.25)),
+                                      color: RecovaColors.monochromeGray),
                                 ),
                               if (sleepStages!.awakeMinutes > 0)
                                 Expanded(
                                   flex: sleepStages!.awakeMinutes,
                                   child: Container(
-                                      color: RecovaColors.stressCrimson
-                                          .withValues(alpha: 0.6)),
+                                      color: RecovaColors.nothingRed),
                                 ),
                             ],
                           )
                         : Container(
                             color: hasSleep
-                                ? RecovaColors.restorativeAzure
+                                ? RecovaColors.monochromeSilver
                                 : Colors.white.withValues(alpha: 0.08),
                           ),
                   ),
