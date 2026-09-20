@@ -46,13 +46,11 @@ class StrainScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: hasStrain
-                      ? RecovaColors.kineticAmberContainer
-                      : RecovaColors.surfaceElevation3,
+                  color: RecovaColors.surfaceElevation3,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                       color: hasStrain
-                          ? RecovaColors.kineticAmberBorder
+                          ? RecovaColors.borderMedium
                           : RecovaColors.borderSubtle),
                 ),
                 child: Text(
@@ -68,7 +66,7 @@ class StrainScreen extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
                     color: hasStrain
-                        ? RecovaColors.kineticAmberGold
+                        ? RecovaColors.textPrimary
                         : RecovaColors.textMuted,
                   ),
                 ),
@@ -129,23 +127,21 @@ class StrainScreen extends StatelessWidget {
                       ],
                     ),
                     Container(
-                      width: 64,
-                      height: 64,
+                      width: 58,
+                      height: 58,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: hasStrain
-                            ? RecovaColors.kineticAmberContainer
-                            : RecovaColors.surfaceElevation3,
+                        color: RecovaColors.surfaceElevation3,
                         border: Border.all(
                             color: hasStrain
-                                ? RecovaColors.kineticAmberBorder
+                                ? RecovaColors.borderMedium
                                 : RecovaColors.borderSubtle),
                       ),
                       child: Icon(
                         Icons.bolt,
-                        size: 32,
+                        size: 28,
                         color: hasStrain
-                            ? RecovaColors.kineticAmberGold
+                            ? RecovaColors.monochromeWhite
                             : RecovaColors.textMuted,
                       ),
                     ),
@@ -174,7 +170,7 @@ class StrainScreen extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.8,
                             color: hasStrain
-                                ? RecovaColors.kineticAmberGold
+                                ? RecovaColors.textPrimary
                                 : RecovaColors.textMuted,
                           ),
                         ),
@@ -185,17 +181,17 @@ class StrainScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(3),
                       child: LinearProgressIndicator(
                         value: progressRatio,
-                        minHeight: 6,
-                        backgroundColor: Colors.white.withValues(alpha: 0.06),
+                        minHeight: 5,
+                        backgroundColor: Colors.white.withValues(alpha: 0.08),
                         valueColor: const AlwaysStoppedAnimation<Color>(
-                            RecovaColors.kineticAmberGold),
+                            RecovaColors.monochromeWhite),
                       ),
                     ),
                   ],
                 ),
               ],
             ),
-          ),
+          ),      ),
           const SizedBox(height: 14),
 
           // ── Caloric & Step Load (100% Real from Health Connect) ──
@@ -381,7 +377,7 @@ class StrainScreen extends StatelessWidget {
               color: RecovaColors.surfaceElevation3,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 18, color: RecovaColors.kineticAmberGold),
+            child: Icon(icon, size: 18, color: RecovaColors.monochromeWhite),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -413,13 +409,13 @@ class StrainScreen extends StatelessWidget {
               Row(
                 children: [
                   const Icon(Icons.bolt,
-                      size: 13, color: RecovaColors.kineticAmberGold),
+                      size: 13, color: RecovaColors.monochromeWhite),
                   Text(
                     strain,
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: RecovaColors.kineticAmberGold,
+                      color: RecovaColors.monochromeWhite,
                     ),
                   ),
                 ],

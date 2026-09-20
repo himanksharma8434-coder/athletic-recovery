@@ -31,17 +31,17 @@ class PulseScreen extends StatelessWidget {
       final diff = (summary!.restingHr! - summary!.baselineRestingHr!).round();
       if (diff < 0) {
         rhrDeltaText = '$diff bpm basal';
-        rhrDeltaColor = RecovaColors.recoveryEmerald;
+        rhrDeltaColor = RecovaColors.textSecondary;
       } else if (diff > 0) {
         rhrDeltaText = '+$diff bpm basal';
-        rhrDeltaColor = RecovaColors.stressCrimson;
+        rhrDeltaColor = RecovaColors.nothingRed;
       } else {
         rhrDeltaText = 'ON BASELINE';
-        rhrDeltaColor = RecovaColors.recoveryEmerald;
+        rhrDeltaColor = RecovaColors.textSecondary;
       }
     } else if (summary?.restingHr != null) {
       rhrDeltaText = 'CURRENT BASAL';
-      rhrDeltaColor = RecovaColors.recoveryEmerald;
+      rhrDeltaColor = RecovaColors.textSecondary;
     }
 
     // Dynamic SpO2 delta / state
@@ -50,10 +50,10 @@ class PulseScreen extends StatelessWidget {
     if (summary?.spo2 != null) {
       if (summary!.spo2! >= 95) {
         spo2DeltaText = 'OPTIMAL RANGE';
-        spo2DeltaColor = RecovaColors.recoveryEmerald;
+        spo2DeltaColor = RecovaColors.textSecondary;
       } else {
         spo2DeltaText = 'ELEVATED DESAT';
-        spo2DeltaColor = RecovaColors.kineticAmberGold;
+        spo2DeltaColor = RecovaColors.nothingRed;
       }
     }
 
@@ -78,7 +78,7 @@ class PulseScreen extends StatelessWidget {
                       border: Border.all(color: RecovaColors.borderMedium),
                     ),
                     child: const Icon(Icons.bolt,
-                        color: RecovaColors.recoveryEmerald, size: 18),
+                        color: RecovaColors.monochromeWhite, size: 18),
                   ),
                   const SizedBox(width: 10),
                   Column(
@@ -113,11 +113,11 @@ class PulseScreen extends StatelessWidget {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: summary != null
-                                  ? RecovaColors.recoveryEmerald
-                                  : RecovaColors.kineticAmberGold,
+                                  ? RecovaColors.nothingRed
+                                  : RecovaColors.textMuted,
                             ),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 5),
                           Text(
                             summary != null
                                 ? 'HEALTH CONNECT • SYNCED'
@@ -127,8 +127,8 @@ class PulseScreen extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.8,
                               color: summary != null
-                                  ? RecovaColors.recoveryEmerald
-                                  : RecovaColors.kineticAmberGold,
+                                  ? RecovaColors.textSecondary
+                                  : RecovaColors.textMuted,
                             ),
                           ),
                         ],
@@ -154,13 +154,13 @@ class PulseScreen extends StatelessWidget {
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: RecovaColors.recoveryEmerald,
+                              color: RecovaColors.monochromeWhite,
                             ),
                           )
                         : const Icon(
                             Icons.sensors,
                             size: 18,
-                            color: RecovaColors.recoveryEmerald,
+                            color: RecovaColors.monochromeWhite,
                           ),
                   );
                 },
@@ -264,11 +264,11 @@ class PulseScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 7,
-                    height: 7,
+                    width: 6,
+                    height: 6,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: RecovaColors.recoveryEmerald,
+                      color: RecovaColors.nothingRed,
                     ),
                   ),
                   const SizedBox(width: 8),

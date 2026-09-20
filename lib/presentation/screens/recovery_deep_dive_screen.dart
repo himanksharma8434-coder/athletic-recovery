@@ -373,16 +373,19 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
                           LineChartBarData(
                             spots: spots,
                             isCurved: spots.length > 2,
-                            color: RecovaColors.recoveryEmerald,
-                            barWidth: 2.5,
+                            color: RecovaColors.monochromeWhite,
+                            barWidth: 2.0,
                             dotData: FlDotData(
                               show: true,
                               getDotPainter: (spot, percent, barData, index) {
+                                final isLatest = index == barData.spots.length - 1;
                                 return FlDotCirclePainter(
-                                  radius: index == barData.spots.length - 1 ? 4 : 2,
-                                  color: RecovaColors.recoveryEmerald,
+                                  radius: isLatest ? 4 : 2,
+                                  color: isLatest
+                                      ? RecovaColors.nothingRed
+                                      : RecovaColors.monochromeSilver,
                                   strokeColor: Colors.white,
-                                  strokeWidth: index == barData.spots.length - 1 ? 2 : 0,
+                                  strokeWidth: isLatest ? 1.5 : 0,
                                 );
                               },
                             ),
@@ -392,10 +395,8 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: [
-                                  RecovaColors.recoveryEmerald
-                                      .withValues(alpha: 0.25),
-                                  RecovaColors.recoveryEmerald
-                                      .withValues(alpha: 0.0),
+                                  Colors.white.withValues(alpha: 0.10),
+                                  Colors.white.withValues(alpha: 0.0),
                                 ],
                               ),
                             ),
