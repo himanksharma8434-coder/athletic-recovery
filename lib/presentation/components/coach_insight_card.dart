@@ -52,17 +52,17 @@ class CoachInsightCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
-                children: [
+                children: const [
                   Icon(Icons.psychology_outlined,
-                      size: 16, color: tier.color),
-                  const SizedBox(width: 8),
-                  const Text(
+                      size: 15, color: RecovaColors.monochromeWhite),
+                  SizedBox(width: 8),
+                  Text(
                     'COACH INSIGHT',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 9.5,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 1.5,
-                      color: RecovaColors.textSecondary,
+                      letterSpacing: 1.4,
+                      color: RecovaColors.textPrimary,
                     ),
                   ),
                 ],
@@ -70,7 +70,7 @@ class CoachInsightCard extends StatelessWidget {
               const Text(
                 'AUTONOMIC AI',
                 style: TextStyle(
-                  fontSize: 9,
+                  fontSize: 8.5,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.2,
                   color: RecovaColors.textTertiary,

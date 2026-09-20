@@ -49,7 +49,7 @@ class EcgWaveformCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: hasHr
-                          ? RecovaColors.recoveryEmerald
+                          ? RecovaColors.nothingRed
                           : RecovaColors.textMuted,
                     ),
                   ),
@@ -58,10 +58,10 @@ class EcgWaveformCard extends StatelessWidget {
                     hasHr ? 'HEALTH CONNECT LIVE' : 'SENSOR STANDBY',
                     style: TextStyle(
                       fontSize: 8.5,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                       letterSpacing: 0.8,
                       color: hasHr
-                          ? RecovaColors.textTertiary
+                          ? RecovaColors.textSecondary
                           : RecovaColors.textMuted,
                     ),
                   ),
@@ -86,9 +86,9 @@ class EcgWaveformCard extends StatelessWidget {
                       border: Border.all(color: RecovaColors.borderSubtle),
                     ),
                     child: Icon(Icons.favorite_outline,
-                        size: 16,
+                        size: 15,
                         color: hasHr
-                            ? RecovaColors.recoveryEmerald
+                            ? RecovaColors.monochromeWhite
                             : RecovaColors.textMuted),
                   ),
                   const SizedBox(width: 10),
@@ -142,7 +142,7 @@ class EcgWaveformCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Divider(height: 1, color: RecovaColors.borderSubtle),
+          const Divider(height: 1, color: RecovaColors.borderSubtle),
           const SizedBox(height: 10),
 
           // Respiration Cycle
@@ -160,9 +160,9 @@ class EcgWaveformCard extends StatelessWidget {
                       border: Border.all(color: RecovaColors.borderSubtle),
                     ),
                     child: Icon(Icons.air,
-                        size: 16,
+                        size: 15,
                         color: hasRpm
-                            ? RecovaColors.restorativeAzure
+                            ? RecovaColors.monochromeSilver
                             : RecovaColors.textMuted),
                   ),
                   const SizedBox(width: 10),
@@ -208,23 +208,21 @@ class EcgWaveformCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: hasRpm
-                      ? RecovaColors.recoveryEmeraldContainer
-                      : RecovaColors.surfaceElevation3,
+                  color: RecovaColors.surfaceElevation3,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                       color: hasRpm
-                          ? RecovaColors.recoveryEmeraldBorder
+                          ? RecovaColors.borderMedium
                           : RecovaColors.borderSubtle),
                 ),
                 child: Text(
                   hasRpm ? 'IN RANGE' : 'AWAITING SYNC',
                   style: TextStyle(
                     fontSize: 8.5,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     letterSpacing: 0.8,
                     color: hasRpm
-                        ? RecovaColors.recoveryEmerald
+                        ? RecovaColors.textPrimary
                         : RecovaColors.textMuted,
                   ),
                 ),
@@ -246,7 +244,7 @@ class _EcgSparklinePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = active
-          ? RecovaColors.recoveryEmerald
+          ? RecovaColors.monochromeWhite
           : Colors.white.withValues(alpha: 0.15)
       ..strokeWidth = 1.6
       ..style = PaintingStyle.stroke

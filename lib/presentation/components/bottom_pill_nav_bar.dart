@@ -73,7 +73,7 @@ class BottomPillNavBar extends StatelessWidget {
   }) {
     final isSelected = selectedIndex == index;
     final color = isSelected
-        ? RecovaColors.recoveryEmerald
+        ? RecovaColors.monochromeWhite
         : RecovaColors.textTertiary;
 
     return GestureDetector(
@@ -102,15 +102,15 @@ class BottomPillNavBar extends StatelessWidget {
             const SizedBox(height: 2),
             if (isSelected)
               Container(
-                width: 4,
-                height: 4,
+                width: 3.5,
+                height: 3.5,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  color: RecovaColors.recoveryEmerald,
+                  color: RecovaColors.monochromeWhite,
                 ),
               )
             else
-              const SizedBox(height: 4),
+              const SizedBox(height: 3.5),
           ],
         ),
       ),
