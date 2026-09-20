@@ -1,79 +1,91 @@
 import 'package:flutter/material.dart';
 
-/// Kinetic Obsidian Color System
-/// Calibrated luminance model designed for dark, high-contrast athletic telemetry.
+/// Nothing X Minimalist Monochrome Color System
+/// High-contrast black & white telemetry with surgical Nothing Red accents.
 class RecovaColors {
   RecovaColors._();
 
-  // ── Surface Architecture ──────────────────────────────────────────
-  static const Color canvasBase = Color(0xFF08090C); // Absolute deep field
-  static const Color surfaceElevation1 = Color(0xFF111318); // Cards
-  static const Color surfaceElevation2 = Color(0xFF0B0D11); // Recessed insets
-  static const Color surfaceElevation3 = Color(0xFF181B22); // Floating bars / nav
-  static const Color surfaceContainer = Color(0xFF1F1F23);
-  static const Color surfaceContainerHigh = Color(0xFF292A2D);
-  static const Color surfaceContainerHighest = Color(0xFF343538);
+  // ── Surface Architecture (Nothing Pure OLED Dark) ───────────────────
+  static const Color canvasBase = Color(0xFF08090C); // Pitch OLED black
+  static const Color surfaceElevation1 = Color(0xFF111215); // Carbon card
+  static const Color surfaceElevation2 = Color(0xFF0B0C0E); // Recessed insets
+  static const Color surfaceElevation3 = Color(0xFF16171B); // Floating bars / nav
+  static const Color surfaceContainer = Color(0xFF18191D);
+  static const Color surfaceContainerHigh = Color(0xFF222327);
+  static const Color surfaceContainerHighest = Color(0xFF2C2D32);
 
-  // ── Structural Borders ────────────────────────────────────────────
-  static const Color borderSubtle = Color(0x14FFFFFF); // 8% white
-  static const Color borderMedium = Color(0x1FFFFFFF); // 12% white
-  static const Color borderHover = Color(0x33FFFFFF); // 20% white
+  // ── Structural Hairline Borders ───────────────────────────────────
+  static const Color borderSubtle = Color(0x14FFFFFF); // 8% white hairline
+  static const Color borderMedium = Color(0x24FFFFFF); // 14% white
+  static const Color borderHover = Color(0x40FFFFFF); // 25% white
   static const Color surfaceOverlay = Color(0x0AFFFFFF); // 4% white
 
-  // ── Typography Colors ─────────────────────────────────────────────
-  static const Color onSurface = Color(0xFFE3E2E6);
-  static const Color onSurfaceVariant = Color(0xFFBACBBC);
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xB3FFFFFF); // 70% white
-  static const Color textTertiary = Color(0x80FFFFFF); // 50% white
-  static const Color textMuted = Color(0x59FFFFFF); // 35% white
+  // ── High-Contrast Typography ──────────────────────────────────────
+  static const Color onSurface = Color(0xFFEEEEEE);
+  static const Color onSurfaceVariant = Color(0xFFAAAAAA);
+  static const Color textPrimary = Color(0xFFFFFFFF); // Stark pure white
+  static const Color textSecondary = Color(0xFFB0B0B0); // Cool silver
+  static const Color textTertiary = Color(0xFF757575); // Mid gray
+  static const Color textMuted = Color(0xFF4A4A4A); // Muted dark gray
 
-  // ── Recovery Emerald (Primary) ────────────────────────────────────
-  static const Color recoveryEmerald = Color(0xFF00F090);
-  static const Color recoveryEmeraldBright = Color(0xFF58FFA5);
-  static const Color recoveryEmeraldDim = Color(0xFF00E388);
-  static const Color recoveryEmeraldContainer = Color(0x1F00F090); // 12% alpha
-  static const Color recoveryEmeraldBorder = Color(0x4D00F090); // 30% alpha
+  // ── Nothing Signature Red (Surgical Live & Alert Accent) ──────────
+  static const Color nothingRed = Color(0xFFD71920); // Signature Nothing Red
+  static const Color nothingRedContainer = Color(0x26D71920);
+  static const Color nothingRedBorder = Color(0x4DD71920);
 
-  // ── Restorative Azure (Sleep/Secondary) ───────────────────────────
-  static const Color restorativeAzure = Color(0xFF00D2FF);
-  static const Color restorativeAzureBright = Color(0xFFA5E7FF);
-  static const Color restorativeAzureSky = Color(0xFF38BDF8);
-  static const Color restorativeAzureContainer = Color(0x1F00D2FF);
-  static const Color restorativeAzureBorder = Color(0x4D00D2FF);
+  // ── Monochrome Telemetry Scales (Replaces Neon Gradients) ─────────
+  static const Color monochromeWhite = Color(0xFFFFFFFF);
+  static const Color monochromeSilver = Color(0xFFD6D6D6);
+  static const Color monochromeGray = Color(0xFF8E8E93);
+  static const Color monochromeDark = Color(0xFF2C2C2E);
 
-  // ── Kinetic Amber (Strain/Workouts) ───────────────────────────────
-  static const Color kineticAmber = Color(0xFFFF6B00);
-  static const Color kineticAmberGold = Color(0xFFFF9E00);
-  static const Color kineticAmberLight = Color(0xFFFFB84D);
-  static const Color kineticAmberContainer = Color(0x1FFF6B00);
-  static const Color kineticAmberBorder = Color(0x4DFF6B00);
+  // ── Backwards-Compatible Semantic Tokens (Mapped to B&W + Red) ─────
+  // Primary / Recovery (Crisp Stark White)
+  static const Color recoveryEmerald = Color(0xFFFFFFFF);
+  static const Color recoveryEmeraldBright = Color(0xFFFFFFFF);
+  static const Color recoveryEmeraldDim = Color(0xFFCCCCCC);
+  static const Color recoveryEmeraldContainer = Color(0x14FFFFFF);
+  static const Color recoveryEmeraldBorder = Color(0x33FFFFFF);
 
-  // ── Stress Crimson (Suppressed State) ─────────────────────────────
-  static const Color stressCrimson = Color(0xFFFF3B56);
-  static const Color stressCrimsonContainer = Color(0x1FFF3B56);
-  static const Color stressCrimsonBorder = Color(0x4DFF3B56);
+  // Sleep / Restorative (Muted Clean Silver)
+  static const Color restorativeAzure = Color(0xFFE0E0E0);
+  static const Color restorativeAzureBright = Color(0xFFFFFFFF);
+  static const Color restorativeAzureSky = Color(0xFFCCCCCC);
+  static const Color restorativeAzureContainer = Color(0x14FFFFFF);
+  static const Color restorativeAzureBorder = Color(0x2BFFFFFF);
 
-  // ── Neural Violet (REM/Predictive) ────────────────────────────────
-  static const Color neuralViolet = Color(0xFF8B5CF6);
-  static const Color neuralVioletContainer = Color(0x1F8B5CF6);
-  static const Color neuralVioletBorder = Color(0x4D8B5CF6);
+  // Strain / Workouts (Tactile Cool Silver)
+  static const Color kineticAmber = Color(0xFFD4D4D4);
+  static const Color kineticAmberGold = Color(0xFFE8E8E8);
+  static const Color kineticAmberLight = Color(0xFFFFFFFF);
+  static const Color kineticAmberContainer = Color(0x14FFFFFF);
+  static const Color kineticAmberBorder = Color(0x2BFFFFFF);
 
-  // ── Glow Effects ──────────────────────────────────────────────────
-  static const Color glowRecovery = Color(0x4700F090);
-  static const Color glowStrain = Color(0x3DFF6B00);
-  static const Color glowSleep = Color(0x3800D2FF);
+  // Suppressed / Warning (Nothing Red)
+  static const Color stressCrimson = Color(0xFFD71920);
+  static const Color stressCrimsonContainer = Color(0x26D71920);
+  static const Color stressCrimsonBorder = Color(0x4DD71920);
+
+  // Secondary / Predictive (Muted Neutral)
+  static const Color neuralViolet = Color(0xFFB8B8B8);
+  static const Color neuralVioletContainer = Color(0x14FFFFFF);
+  static const Color neuralVioletBorder = Color(0x26FFFFFF);
+
+  // ── Sub-pixel Ambient Layering (Clean, No Loud Neons) ─────────────
+  static const Color glowRecovery = Color(0x0DFFFFFF);
+  static const Color glowStrain = Color(0x0DFFFFFF);
+  static const Color glowSleep = Color(0x0DFFFFFF);
 }
 
-/// Recovery score tier classification
+/// Recovery score tier classification (Nothing X High-Contrast Monochrome)
 enum RecoveryTier {
-  optimal('OPTIMAL RECOVERY', 'PRIMED FOR STRAIN', RecovaColors.recoveryEmerald,
-      RecovaColors.recoveryEmeraldContainer, RecovaColors.recoveryEmeraldBorder),
-  moderate('MODERATE RECOVERY', 'MAINTAIN LOAD', RecovaColors.kineticAmberGold,
-      RecovaColors.kineticAmberContainer, RecovaColors.kineticAmberBorder),
+  optimal('OPTIMAL RECOVERY', 'PRIMED FOR STRAIN', RecovaColors.monochromeWhite,
+      RecovaColors.surfaceOverlay, RecovaColors.borderMedium),
+  moderate('MODERATE RECOVERY', 'MAINTAIN LOAD', RecovaColors.monochromeSilver,
+      RecovaColors.surfaceOverlay, RecovaColors.borderSubtle),
   suppressed('SUPPRESSED RECOVERY', 'ACTIVE REST RECOMMENDED',
-      RecovaColors.stressCrimson, RecovaColors.stressCrimsonContainer,
-      RecovaColors.stressCrimsonBorder),
+      RecovaColors.nothingRed, RecovaColors.nothingRedContainer,
+      RecovaColors.nothingRedBorder),
   calibrating('CALIBRATING', 'SYNCING BIOMETRICS', RecovaColors.textTertiary,
       RecovaColors.surfaceOverlay, RecovaColors.borderSubtle);
 

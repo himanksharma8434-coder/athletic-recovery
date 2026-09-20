@@ -54,28 +54,31 @@ class _RadialScoreGaugeState extends State<RadialScoreGauge>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Background ambient radial blur glow
+          // Background ambient subtle radial depth (No neon bloom)
           Container(
-            width: widget.size * 0.75,
-            height: widget.size * 0.75,
+            width: widget.size * 0.72,
+            height: widget.size * 0.72,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
+              color: const Color(0xFF0D0E11),
               boxShadow: [
                 BoxShadow(
-                  color: tier.color.withValues(alpha: 0.18),
-                  blurRadius: 36,
-                  spreadRadius: 8,
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 24,
+                  spreadRadius: 2,
                 ),
               ],
             ),
           ),
 
-          // Custom Painter for concentric track and arc
+          // Custom Painter for Nothing NDot concentric dotted track and arc
           CustomPaint(
             size: Size(widget.size, widget.size),
-            painter: _GaugePainter(
+            painter: _NothingGaugePainter(
               score: effectiveScore,
-              color: tier.color,
+              accentColor: tier == RecoveryTier.suppressed
+                  ? RecovaColors.nothingRed
+                  : RecovaColors.monochromeWhite,
             ),
           ),
 
@@ -83,12 +86,12 @@ class _RadialScoreGaugeState extends State<RadialScoreGauge>
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
+              const Text(
                 'RECOVERY',
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 9.5,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: 2.2,
+                  letterSpacing: 2.4,
                   color: RecovaColors.textTertiary,
                 ),
               ),
@@ -101,7 +104,7 @@ class _RadialScoreGaugeState extends State<RadialScoreGauge>
                   Text(
                     widget.score != null ? '${effectiveScore.toInt()}' : '--',
                     style: TextStyle(
-                      fontSize: widget.size * 0.26,
+                      fontSize: widget.size * 0.25,
                       fontWeight: FontWeight.w300,
                       letterSpacing: -1.5,
                       color: RecovaColors.textPrimary,
@@ -109,45 +112,49 @@ class _RadialScoreGaugeState extends State<RadialScoreGauge>
                     ),
                   ),
                   const SizedBox(width: 2),
-                  Text(
+                  const Text(
                     '%',
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: tier.color,
+                      color: RecovaColors.textSecondary,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
 
-              // Status Pill with Pulsing Vital Dot
+              // Nothing X Status Pill with Signature Indicator Dot
               AnimatedBuilder(
                 animation: _pulseAnimation,
                 builder: (context, child) {
+                  final dotColor = tier == RecoveryTier.suppressed
+                      ? RecovaColors.nothingRed
+                      : (widget.score != null
+                          ? RecovaColors.monochromeWhite
+                          : RecovaColors.textTertiary);
+
                   return Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: tier.containerColor,
-                      border: Border.all(color: tier.borderColor),
+                      color: RecovaColors.surfaceElevation1,
+                      border: Border.all(color: RecovaColors.borderSubtle),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: 6,
-                          height: 6,
+                          width: 5,
+                          height: 5,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: tier.color
-                                .withValues(alpha: _pulseAnimation.value),
+                            color: dotColor.withValues(alpha: _pulseAnimation.value),
                             boxShadow: [
                               BoxShadow(
-                                color: tier.color.withValues(
-                                    alpha: _pulseAnimation.value * 0.6),
-                                blurRadius: 6,
+                                color: dotColor.withValues(
+                                    alpha: _pulseAnimation.value * 0.5),
+                                blurRadius: 4,
                                 spreadRadius: 1,
                               ),
                             ],
@@ -156,11 +163,11 @@ class _RadialScoreGaugeState extends State<RadialScoreGauge>
                         const SizedBox(width: 6),
                         Text(
                           tier.statusSubtitle,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 8.5,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 1.2,
-                            color: tier.color,
+                            color: RecovaColors.textSecondary,
                           ),
                         ),
                       ],
@@ -176,76 +183,73 @@ class _RadialScoreGaugeState extends State<RadialScoreGauge>
   }
 }
 
-class _GaugePainter extends CustomPainter {
+class _NothingGaugePainter extends CustomPainter {
   final double score;
-  final Color color;
+  final Color accentColor;
 
-  _GaugePainter({required this.score, required this.color});
+  _NothingGaugePainter({required this.score, required this.accentColor});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width - 24) / 2;
 
-    // Track Background ring
+    // 1. Subtle hairline background circular track
     final bgPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.05)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 6;
+      ..strokeWidth = 2;
     canvas.drawCircle(center, radius, bgPaint);
 
-    // Subtle tick circle (dots/dashes)
-    final tickPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.08)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    const totalTicks = 48;
-    for (int i = 0; i < totalTicks; i++) {
-      final angle = (i * 2 * pi) / totalTicks;
-      final innerX = center.dx + (radius - 8) * cos(angle);
-      final innerY = center.dy + (radius - 8) * sin(angle);
-      final outerX = center.dx + (radius - 4) * cos(angle);
-      final outerY = center.dy + (radius - 4) * sin(angle);
-      canvas.drawLine(Offset(innerX, innerY), Offset(outerX, outerY), tickPaint);
+    // 2. Nothing OS NDot Dotted Matrix Ring (60 circular dot ticks)
+    const totalDots = 60;
+    final dotPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.12)
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i < totalDots; i++) {
+      final angle = (i * 2 * pi) / totalDots - (pi / 2);
+      final dotX = center.dx + radius * cos(angle);
+      final dotY = center.dy + radius * sin(angle);
+      canvas.drawCircle(Offset(dotX, dotY), 1.2, dotPaint);
     }
 
-    // Active Arc with Glow
+    // 3. Active Score Progress: Dotted and Solid Arc Highlight
     if (score > 0) {
+      final activeDotsCount = ((score / 100) * totalDots).round();
+
+      // Highlight active NDots with pure white / accent
+      final activeDotPaint = Paint()
+        ..color = accentColor
+        ..style = PaintingStyle.fill;
+
+      for (int i = 0; i < activeDotsCount; i++) {
+        final angle = (i * 2 * pi) / totalDots - (pi / 2);
+        final dotX = center.dx + radius * cos(angle);
+        final dotY = center.dy + radius * sin(angle);
+        canvas.drawCircle(Offset(dotX, dotY), 2.2, activeDotPaint);
+      }
+
+      // Smooth inner hairline arc for continuous visual clarity
       final sweepAngle = (score / 100) * 2 * pi;
-
-      // Glow shadow paint
-      final glowPaint = Paint()
-        ..color = color.withValues(alpha: 0.35)
+      final innerArcPaint = Paint()
+        ..color = accentColor.withValues(alpha: 0.85)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 8
-        ..strokeCap = StrokeCap.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        -pi / 2,
-        sweepAngle,
-        false,
-        glowPaint,
-      );
-
-      // Primary crisp arc
-      final activePaint = Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 5.5
+        ..strokeWidth = 2.5
         ..strokeCap = StrokeCap.round;
+
       canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
+        Rect.fromCircle(center: center, radius: radius - 6),
         -pi / 2,
         sweepAngle,
         false,
-        activePaint,
+        innerArcPaint,
       );
     }
   }
 
   @override
-  bool shouldRepaint(covariant _GaugePainter oldDelegate) {
-    return oldDelegate.score != score || oldDelegate.color != color;
+  bool shouldRepaint(covariant _NothingGaugePainter oldDelegate) {
+    return oldDelegate.score != score || oldDelegate.accentColor != accentColor;
   }
 }
