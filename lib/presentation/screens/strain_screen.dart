@@ -191,7 +191,7 @@ class StrainScreen extends StatelessWidget {
                 ),
               ],
             ),
-          ),      ),
+          ),
           const SizedBox(height: 14),
 
           // ── Caloric & Step Load (100% Real from Health Connect) ──
