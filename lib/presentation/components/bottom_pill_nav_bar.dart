@@ -17,7 +17,7 @@ class BottomPillNavBar extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.only(bottom: 12, left: 24, right: 24),
         child: Container(
-          height: 62,
+          height: 64,
           padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
             color: const Color(0xE60E1014),
@@ -76,42 +76,47 @@ class BottomPillNavBar extends StatelessWidget {
         ? RecovaColors.monochromeWhite
         : RecovaColors.textTertiary;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => onTabSelected(index),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSelected ? activeIcon : icon,
-              size: 20,
-              color: color,
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 9.5,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                letterSpacing: 0.5,
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => onTabSelected(index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isSelected ? activeIcon : icon,
+                size: 20,
                 color: color,
               ),
-            ),
-            const SizedBox(height: 2),
-            if (isSelected)
-              Container(
-                width: 3.5,
-                height: 3.5,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: RecovaColors.monochromeWhite,
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 9.5,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  letterSpacing: 0.5,
+                  color: color,
                 ),
-              )
-            else
-              const SizedBox(height: 3.5),
-          ],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              if (isSelected)
+                Container(
+                  width: 3.5,
+                  height: 3.5,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: RecovaColors.monochromeWhite,
+                  ),
+                )
+              else
+                const SizedBox(height: 3.5),
+            ],
+          ),
         ),
       ),
     );

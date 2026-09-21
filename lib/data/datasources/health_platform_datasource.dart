@@ -184,7 +184,17 @@ class HealthPlatformDatasource {
 
     // Extract numeric value based on the data point type
     final numValue = point.value;
-    if (numValue is NumericHealthValue) {
+    final isSleep = point.type == HealthDataType.SLEEP_SESSION ||
+        point.type == HealthDataType.SLEEP_ASLEEP ||
+        point.type == HealthDataType.SLEEP_AWAKE ||
+        point.type == HealthDataType.SLEEP_DEEP ||
+        point.type == HealthDataType.SLEEP_LIGHT ||
+        point.type == HealthDataType.SLEEP_REM;
+
+    if (isSleep) {
+      // Sleep values are always elapsed duration in minutes from timestamps
+      value = point.dateTo.difference(point.dateFrom).inMinutes.abs().toDouble();
+    } else if (numValue is NumericHealthValue) {
       value = numValue.numericValue.toDouble();
     } else if (numValue is WorkoutHealthValue) {
       // For workouts: duration in minutes as primary value,
@@ -195,7 +205,6 @@ class HealthPlatformDatasource {
     } else if (numValue is ElectrocardiogramHealthValue) {
       value = numValue.voltageValues.length.toDouble();
     } else {
-      // For sleep sessions and other non-numeric types, use duration in minutes
       value = point.dateTo.difference(point.dateFrom).inMinutes.toDouble();
     }
 
