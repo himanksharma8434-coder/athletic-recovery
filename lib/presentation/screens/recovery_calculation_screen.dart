@@ -15,18 +15,20 @@ class RecoveryCalculationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final score = summary?.recoveryScore;
-    final tier = RecoveryTier.fromScore(score);
-
     // Compute live components from the use case logic if summary is present
-    double rhrComponent = 50.0;
-    double sleepComponent = 50.0;
-    double spo2Component = 50.0;
+    double hrvComponent = summary?.recoveryComponentHrv ?? 75.0;
+    double rhrComponent = summary?.recoveryComponentRhr ?? 50.0;
+    double sleepComponent = summary?.recoveryComponentSleep ?? 50.0;
+    double spo2Component = summary?.recoveryComponentSpo2 ?? 50.0;
+    double respComponent = summary?.recoveryComponentRespiratory ?? 100.0;
     String primaryFactor = summary?.primaryFactor ?? 'Baselines calibrating.';
+    double? liveScore = summary?.recoveryScore;
 
     if (summary != null) {
       const calculator = ComputeRecoveryScore();
       final res = calculator(
+        todayHrv: summary!.hrvMs,
+        hrvBaseline: summary!.baselineHrv,
         todayRhr: summary!.restingHr,
         rhrBaseline7d: summary!.baselineRestingHr,
         lastNightSleepMinutes: summary!.sleepHours != null
@@ -35,14 +37,27 @@ class RecoveryCalculationScreen extends StatelessWidget {
         sleepBaseline7d: summary!.baselineSleepHours != null
             ? summary!.baselineSleepHours! * 60
             : null,
+        deepSleepMinutes: summary!.sleepStages?.deepMinutes,
+        remSleepMinutes: summary!.sleepStages?.remMinutes,
         todaySpo2: summary!.spo2,
-        spo2Baseline7d: 97.0, // Clinical standard or baseline
+        spo2Baseline7d: summary!.baselineSpo2 ?? 97.0,
+        todayRespiratoryRate: summary!.respiratoryRate,
+        respiratoryRateBaseline: summary!.baselineRespiratoryRate ?? 14.0,
       );
+      hrvComponent = res.hrvComponent ?? (summary!.recoveryComponentHrv ?? 75.0);
       rhrComponent = res.rhrComponent;
       sleepComponent = res.sleepComponent;
       spo2Component = res.spo2Component;
+      respComponent = res.respiratoryComponent ?? (summary!.recoveryComponentRespiratory ?? 100.0);
       primaryFactor = res.primaryFactor;
+      liveScore = res.score;
     }
+
+    final score = liveScore;
+    final tier = RecoveryTier.fromScore(score);
+
+    // Combined pulmonary / vital score for SpO2 + Respiratory (5% + 5% = 10%)
+    final pulmonaryComponent = ((spo2Component + respComponent) / 2.0).roundToDouble();
 
     return Scaffold(
       backgroundColor: RecovaColors.canvasBase,
@@ -229,7 +244,7 @@ class RecoveryCalculationScreen extends StatelessWidget {
 
                     // ── Algorithm Foundation ──
                     const Text(
-                      'THE 3 BIOMETRIC PILLARS',
+                      'THE BIOMETRIC PILLARS',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -239,37 +254,56 @@ class RecoveryCalculationScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
 
-                    // ── Pillar 1: Resting Heart Rate (50%) ──
+                    // ── Pillar 1: Heart Rate Variability (40%) ──
                     _PillarCard(
-                      title: '1. RESTING HEART RATE',
-                      weight: '50% WEIGHT',
-                      weightFraction: 0.50,
+                      title: '1. HEART RATE VARIABILITY (HRV)',
+                      weight: '40% WEIGHT',
+                      weightFraction: 0.40,
+                      todayScore: hrvComponent,
+                      icon: Icons.monitor_heart_outlined,
+                      formula: 'Deviation = (Today HRV - Baseline HRV) / Baseline',
+                      explanation:
+                          'HRV is the gold standard indicator for central nervous system readiness and vagal parasympathetic tone. When HRV is elevated above baseline, your body is primed for strain. Suppressed HRV signifies accumulated systemic fatigue.',
+                      userMetric: summary?.hrvMs != null
+                          ? '${summary!.hrvMs!.toInt()} ms (RMSSD/SDNN)'
+                          : 'Awaiting sensor sync',
+                      baselineMetric: summary?.baselineHrv != null
+                          ? '${summary!.baselineHrv!.toInt()} ms baseline'
+                          : '55 ms standard target',
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ── Pillar 2: Resting Heart Rate (30%) ──
+                    _PillarCard(
+                      title: '2. RESTING HEART RATE',
+                      weight: '30% WEIGHT',
+                      weightFraction: 0.30,
                       todayScore: rhrComponent,
                       icon: Icons.favorite_border,
                       formula: 'Deviation = (Today RHR - 14D Baseline) / Baseline',
                       explanation:
-                          'Resting HR is the primary cardiovascular proxy for central nervous system fatigue. When basal RHR is at or below your 14-day baseline, this pillar scores 100%. If RHR is elevated by 20% or more, the score drops to 0%.',
+                          'Resting HR is the primary cardiovascular proxy for central nervous system fatigue. When basal RHR is at or below your baseline, this pillar scores 100%. An elevation above baseline indicates cardiovascular strain.',
                       userMetric: summary?.restingHr != null
                           ? '${summary!.restingHr!.toInt()} bpm (Basal)'
                           : 'Awaiting wearable sync',
                       baselineMetric: summary?.baselineRestingHr != null
-                          ? '${summary!.baselineRestingHr!.toInt()} bpm (14D Base)'
-                          : 'Calibrating baseline',
+                          ? '${summary!.baselineRestingHr!.toInt()} bpm (Base)'
+                          : '60 bpm standard target',
                     ),
                     const SizedBox(height: 12),
 
-                    // ── Pillar 2: Sleep Duration & Architecture (35%) ──
+                    // ── Pillar 3: Sleep Duration & Architecture (20%) ──
                     _PillarCard(
-                      title: '2. SLEEP DURATION & NEED',
-                      weight: '35% WEIGHT',
-                      weightFraction: 0.35,
+                      title: '3. SLEEP DURATION & ARCHITECTURE',
+                      weight: '20% WEIGHT',
+                      weightFraction: 0.20,
                       todayScore: sleepComponent,
                       icon: Icons.bedtime_outlined,
-                      formula: 'Ratio = Actual Sleep Duration / 14D Baseline Need',
+                      formula: 'Performance = Duration vs Need + Stage Quality Adjustment',
                       explanation:
-                          'Sleep restores cellular energy, releases growth hormone, and resets parasympathetic tone. Meeting 100% of your baseline sleep need scores 100%. Sleeping 50% or less of your baseline scores 0%.',
+                          'Sleep restores cellular energy, releases human growth hormone, and resets parasympathetic tone. Restorative stages (Deep + REM) provide vital tissue repair and cognitive consolidation.',
                       userMetric: summary?.sleepHours != null
-                          ? '${summary!.sleepHours!.toStringAsFixed(1)} hrs recorded'
+                          ? '${summary!.sleepHours!.toStringAsFixed(1)} hrs (${summary?.sleepStages?.deepMinutes ?? 0}m Deep, ${summary?.sleepStages?.remMinutes ?? 0}m REM)'
                           : 'Awaiting sleep session',
                       baselineMetric: summary?.baselineSleepHours != null
                           ? '${summary!.baselineSleepHours!.toStringAsFixed(1)} hrs baseline'
@@ -277,20 +311,20 @@ class RecoveryCalculationScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
 
-                    // ── Pillar 3: Blood Oxygen Saturation (15%) ──
+                    // ── Pillar 4: Pulmonary & Blood Oxygen (10%) ──
                     _PillarCard(
-                      title: '3. BLOOD OXYGEN (SpO2)',
-                      weight: '15% WEIGHT',
-                      weightFraction: 0.15,
-                      todayScore: spo2Component,
+                      title: '4. BLOOD OXYGEN & RESPIRATION',
+                      weight: '10% WEIGHT',
+                      weightFraction: 0.10,
+                      todayScore: pulmonaryComponent,
                       icon: Icons.air,
-                      formula: 'Drop = Baseline SpO2 - Nocturnal SpO2',
+                      formula: 'Stability = Nocturnal SpO2 (>=95%) & Respiratory Flux',
                       explanation:
-                          'Blood oxygen levels reflect pulmonary recovery and respiratory stability during sleep. Maintaining nominal saturation (>=95%) scores 100%. Dips greater than 5% scale down the score proportionally.',
+                          'Blood oxygen levels reflect nocturnal pulmonary stability and tissue oxygenation. Maintaining nominal saturation (>=95%) and stable respiratory rate confirms autonomic equilibrium.',
                       userMetric: summary?.spo2 != null
-                          ? '${summary!.spo2!.toStringAsFixed(0)}% SpO2'
+                          ? '${summary!.spo2!.toStringAsFixed(0)}% SpO2 • ${summary?.respiratoryRate != null ? '${summary!.respiratoryRate!.toStringAsFixed(1)} rpm' : '-- rpm'}'
                           : 'Awaiting sensor log',
-                      baselineMetric: '>=95% nominal',
+                      baselineMetric: '>=95% nominal • ~14.0 rpm',
                     ),
                     const SizedBox(height: 20),
 

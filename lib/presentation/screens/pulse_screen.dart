@@ -1,16 +1,19 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/theme/recova_colors.dart';
 import '../../domain/repositories/health_source_repository.dart';
-import '../components/bento_telemetry_pods.dart';
-import '../components/coach_insight_card.dart';
-import '../components/ecg_waveform_card.dart';
+import '../components/daily_activity_pod.dart';
 import '../components/radial_score_gauge.dart';
+import '../components/sleep_performance_card.dart';
 import '../components/vital_metric_tile.dart';
 import '../cubits/health_sync/health_sync_cubit.dart';
 import '../cubits/health_sync/health_sync_state.dart';
+import 'recovery_calculation_screen.dart';
+import 'resting_hr_detail_screen.dart';
+import 'blood_o2_detail_screen.dart';
+import 'sleep_architecture_detail_screen.dart';
+import 'hrv_detail_screen.dart';
 
 class PulseScreen extends StatelessWidget {
   final DerivedMetricSummary? summary;
@@ -21,6 +24,46 @@ class PulseScreen extends StatelessWidget {
     required this.summary,
     required this.onSyncTap,
   });
+
+  void _openHrvDetail(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => HrvDetailScreen(summary: summary),
+      ),
+    );
+  }
+
+  void _openRecoveryCalculation(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RecoveryCalculationScreen(summary: summary),
+      ),
+    );
+  }
+
+  void _openRestingHrDetail(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RestingHrDetailScreen(summary: summary),
+      ),
+    );
+  }
+
+  void _openBloodO2Detail(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BloodO2DetailScreen(summary: summary),
+      ),
+    );
+  }
+
+  void _openSleepArchitectureDetail(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SleepArchitectureDetailScreen(summary: summary),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,11 +102,11 @@ class PulseScreen extends StatelessWidget {
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 96),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // ── Top Athlete Telemetry Status ──
+          // ── Top Athlete Telemetry Status Bar ──
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -169,30 +212,32 @@ class PulseScreen extends StatelessWidget {
           ),
           const SizedBox(height: 18),
 
-          // ── Signature Biometric Recovery Gauge ──
+          // ── Signature Biometric Recovery Gauge (Clickable to Calculation Page) ──
           RadialScoreGauge(
             score: summary?.recoveryScore,
             size: 210,
+            onTap: () => _openRecoveryCalculation(context),
           ),
           const SizedBox(height: 20),
 
-          // ── 3-Column Quick Vital Metrics (100% Real Sensor Data) ──
+          // ── Quick Vital Metrics (100% Real Wearable Sensors & Optical PPG) ──
           Row(
             children: [
               Expanded(
                 child: VitalMetricTile(
-                  label: Platform.isAndroid ? 'HRV (RMSSD)' : 'HRV (SDNN)',
+                  label: 'HRV (rMSSD)',
                   value: summary?.hrvMs != null
                       ? '${summary!.hrvMs!.toInt()}'
                       : '--',
                   unit: 'ms',
                   deltaText: summary?.hrvMs != null
-                      ? 'REAL SENSOR'
-                      : 'NO SENSOR LOG',
+                      ? 'OPTICAL PPG'
+                      : 'AWAITING LOG',
                   deltaColor: summary?.hrvMs != null
-                      ? RecovaColors.recoveryEmerald
+                      ? RecovaColors.textSecondary
                       : RecovaColors.textMuted,
                   icon: Icons.monitor_heart_outlined,
+                  onTap: () => _openHrvDetail(context),
                 ),
               ),
               const SizedBox(width: 8),
@@ -206,6 +251,7 @@ class PulseScreen extends StatelessWidget {
                   deltaText: rhrDeltaText,
                   deltaColor: rhrDeltaColor,
                   icon: Icons.favorite_border,
+                  onTap: () => _openRestingHrDetail(context),
                 ),
               ),
               const SizedBox(width: 8),
@@ -219,71 +265,28 @@ class PulseScreen extends StatelessWidget {
                   deltaText: spo2DeltaText,
                   deltaColor: spo2DeltaColor,
                   icon: Icons.air,
+                  onTap: () => _openBloodO2Detail(context),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
 
-          // ── AI Daily Coach Insight Card ──
-          CoachInsightCard(
-            recoveryScore: summary?.recoveryScore,
-            primaryFactor: summary?.primaryFactor,
-          ),
-          const SizedBox(height: 14),
-
-          // ── Bento Dual Pods: Strain + Sleep ──
-          BentoTelemetryPods(
-            dayStrain: summary?.dayStrain,
+          // ── Full-Width Sleep Architecture Bento (Replaces Split Day Strain Pod) ──
+          SleepPerformanceCard(
             sleepHours: summary?.sleepHours,
             baselineSleepHours: summary?.baselineSleepHours,
             sleepStages: summary?.sleepStages,
+            sleepSessions: summary?.sleepSessions ?? const [],
+            onTap: () => _openSleepArchitectureDetail(context),
           ),
           const SizedBox(height: 14),
 
-          // ── Real-Time Vascular Telemetry ──
-          EcgWaveformCard(
-            restingHr: summary?.restingHr,
-          ),
-          const SizedBox(height: 16),
-
-          // ── Sync Action CTA ──
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: OutlinedButton(
-              onPressed: onSyncTap,
-              style: OutlinedButton.styleFrom(
-                backgroundColor: RecovaColors.surfaceElevation1,
-                side: const BorderSide(color: RecovaColors.borderMedium),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: RecovaColors.nothingRed,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'PULL WEARABLE BIOMETRICS',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                      color: RecovaColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // ── Daily Movement & Energy Expenditure (Replaces ECG Waveform) ──
+          DailyActivityPod(
+            todaySteps: summary?.todaySteps,
+            activeCalories: summary?.activeCalories,
+            totalCalories: summary?.totalCalories,
           ),
         ],
       ),
