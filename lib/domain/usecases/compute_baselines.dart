@@ -38,6 +38,17 @@ class ComputeBaselines {
     return dailySpo2Values.reduce((a, b) => a + b) / dailySpo2Values.length;
   }
 
+  /// Compute HRV baseline from historical HRV values (ms).
+  double? hrvBaseline(List<double> dailyHrvValues) {
+    return median(dailyHrvValues);
+  }
+
+  /// Compute respiratory rate baseline from historical readings (rpm).
+  double? respiratoryRateBaseline(List<double> dailyRespValues) {
+    if (dailyRespValues.isEmpty) return null;
+    return dailyRespValues.reduce((a, b) => a + b) / dailyRespValues.length;
+  }
+
   /// Group records by date and extract daily minimum values.
   List<double> extractDailyMinimums(
       List<({DateTime date, double value})> records) {

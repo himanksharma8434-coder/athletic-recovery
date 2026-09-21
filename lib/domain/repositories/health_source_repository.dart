@@ -65,6 +65,40 @@ class SleepStageBreakdown {
   bool get hasStageData => (deepMinutes + remMinutes + lightMinutes) > 0;
 }
 
+/// Classification of sleep sessions in the 24-hour cycle.
+enum SleepSessionType {
+  nightSleep('NIGHT SLEEP'),
+  morningNap('MORNING NAP'),
+  afternoonNap('AFTERNOON NAP'),
+  eveningNap('EVENING NAP');
+
+  final String label;
+  const SleepSessionType(this.label);
+}
+
+/// An individual sleep session (e.g. nocturnal main sleep or daytime/evening nap).
+class DistributedSleepSession {
+  final String title;
+  final SleepSessionType type;
+  final DateTime startTime;
+  final DateTime endTime;
+  final double durationHours;
+  final int durationMinutes;
+  final SleepStageBreakdown? stages;
+  final bool isMainSleep;
+
+  const DistributedSleepSession({
+    required this.title,
+    required this.type,
+    required this.startTime,
+    required this.endTime,
+    required this.durationHours,
+    required this.durationMinutes,
+    this.stages,
+    this.isMainSleep = false,
+  });
+}
+
 /// Real workout session logged by wearable / Health Connect.
 class WorkoutSessionSummary {
   final String title;
@@ -91,18 +125,26 @@ class HistoricalScorePoint {
 /// Summary object for the dashboard and all tabs. 100% computed from real data.
 class DerivedMetricSummary {
   final double? recoveryScore;
+  final double? recoveryComponentHrv;
   final double? recoveryComponentRhr;
   final double? recoveryComponentSleep;
   final double? recoveryComponentSpo2;
+  final double? recoveryComponentRespiratory;
   final String? primaryFactor;
   final double? estimatedVo2Max;
   final double? restingHr;
   final double? baselineRestingHr;
   final double? sleepHours;
   final double? baselineSleepHours;
+  final double? nightSleepHours;
+  final double? napSleepHours;
+  final List<DistributedSleepSession> sleepSessions;
   final double? spo2;
   final double? baselineSpo2;
   final double? hrvMs;
+  final double? baselineHrv;
+  final double? respiratoryRate;
+  final double? baselineRespiratoryRate;
   final double? dayStrain;
   final double? targetStrain;
   final double? activeCalories;
@@ -116,18 +158,26 @@ class DerivedMetricSummary {
 
   const DerivedMetricSummary({
     this.recoveryScore,
+    this.recoveryComponentHrv,
     this.recoveryComponentRhr,
     this.recoveryComponentSleep,
     this.recoveryComponentSpo2,
+    this.recoveryComponentRespiratory,
     this.primaryFactor,
     this.estimatedVo2Max,
     this.restingHr,
     this.baselineRestingHr,
     this.sleepHours,
     this.baselineSleepHours,
+    this.nightSleepHours,
+    this.napSleepHours,
+    this.sleepSessions = const [],
     this.spo2,
     this.baselineSpo2,
     this.hrvMs,
+    this.baselineHrv,
+    this.respiratoryRate,
+    this.baselineRespiratoryRate,
     this.dayStrain,
     this.targetStrain,
     this.activeCalories,
