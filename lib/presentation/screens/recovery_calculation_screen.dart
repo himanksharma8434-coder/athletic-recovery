@@ -1,0 +1,594 @@
+import 'package:flutter/material.dart';
+import '../../core/theme/recova_colors.dart';
+import '../../domain/repositories/health_source_repository.dart';
+import '../../domain/usecases/compute_recovery_score.dart';
+
+/// Scientific Explainer Screen detailing how Recova calculates
+/// the daily recovery score using the 3-pillar biometric algorithm.
+class RecoveryCalculationScreen extends StatelessWidget {
+  final DerivedMetricSummary? summary;
+
+  const RecoveryCalculationScreen({
+    super.key,
+    this.summary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final score = summary?.recoveryScore;
+    final tier = RecoveryTier.fromScore(score);
+
+    // Compute live components from the use case logic if summary is present
+    double rhrComponent = 50.0;
+    double sleepComponent = 50.0;
+    double spo2Component = 50.0;
+    String primaryFactor = summary?.primaryFactor ?? 'Baselines calibrating.';
+
+    if (summary != null) {
+      const calculator = ComputeRecoveryScore();
+      final res = calculator(
+        todayRhr: summary!.restingHr,
+        rhrBaseline7d: summary!.baselineRestingHr,
+        lastNightSleepMinutes: summary!.sleepHours != null
+            ? summary!.sleepHours! * 60
+            : null,
+        sleepBaseline7d: summary!.baselineSleepHours != null
+            ? summary!.baselineSleepHours! * 60
+            : null,
+        todaySpo2: summary!.spo2,
+        spo2Baseline7d: 97.0, // Clinical standard or baseline
+      );
+      rhrComponent = res.rhrComponent;
+      sleepComponent = res.sleepComponent;
+      spo2Component = res.spo2Component;
+      primaryFactor = res.primaryFactor;
+    }
+
+    return Scaffold(
+      backgroundColor: RecovaColors.canvasBase,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── Top Navigation Bar ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: IconButton.styleFrom(
+                      backgroundColor: RecovaColors.surfaceElevation1,
+                      shape: const CircleBorder(
+                        side: BorderSide(color: RecovaColors.borderSubtle),
+                      ),
+                    ),
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      size: 20,
+                      color: RecovaColors.monochromeWhite,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'HOW RECOVERY IS CALCULATED',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.0,
+                            color: RecovaColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          'AUTONOMIC COMPOSITE ALGORITHM',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.8,
+                            color: RecovaColors.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Scrollable Content ──
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Today's Composite Score Hero ──
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: RecovaColors.surfaceElevation1,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: RecovaColors.borderMedium),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'TODAY\'S SCORE',
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 1.4,
+                                      color: RecovaColors.textTertiary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                                    textBaseline: TextBaseline.alphabetic,
+                                    children: [
+                                      Text(
+                                        score != null
+                                            ? '${score.toInt()}'
+                                            : '--',
+                                        style: const TextStyle(
+                                          fontSize: 38,
+                                          fontWeight: FontWeight.w300,
+                                          letterSpacing: -1.0,
+                                          color: RecovaColors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      const Text(
+                                        '%',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: RecovaColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: RecovaColors.surfaceElevation2,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: tier.borderColor),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: tier.color,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      tier.label,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.8,
+                                        color: tier.color,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: RecovaColors.surfaceElevation2,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.info_outline,
+                                    size: 14, color: RecovaColors.textSecondary),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    primaryFactor,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: RecovaColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // ── Algorithm Foundation ──
+                    const Text(
+                      'THE 3 BIOMETRIC PILLARS',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                        color: RecovaColors.textTertiary,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // ── Pillar 1: Resting Heart Rate (50%) ──
+                    _PillarCard(
+                      title: '1. RESTING HEART RATE',
+                      weight: '50% WEIGHT',
+                      weightFraction: 0.50,
+                      todayScore: rhrComponent,
+                      icon: Icons.favorite_border,
+                      formula: 'Deviation = (Today RHR - 14D Baseline) / Baseline',
+                      explanation:
+                          'Resting HR is the primary cardiovascular proxy for central nervous system fatigue. When basal RHR is at or below your 14-day baseline, this pillar scores 100%. If RHR is elevated by 20% or more, the score drops to 0%.',
+                      userMetric: summary?.restingHr != null
+                          ? '${summary!.restingHr!.toInt()} bpm (Basal)'
+                          : 'Awaiting wearable sync',
+                      baselineMetric: summary?.baselineRestingHr != null
+                          ? '${summary!.baselineRestingHr!.toInt()} bpm (14D Base)'
+                          : 'Calibrating baseline',
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ── Pillar 2: Sleep Duration & Architecture (35%) ──
+                    _PillarCard(
+                      title: '2. SLEEP DURATION & NEED',
+                      weight: '35% WEIGHT',
+                      weightFraction: 0.35,
+                      todayScore: sleepComponent,
+                      icon: Icons.bedtime_outlined,
+                      formula: 'Ratio = Actual Sleep Duration / 14D Baseline Need',
+                      explanation:
+                          'Sleep restores cellular energy, releases growth hormone, and resets parasympathetic tone. Meeting 100% of your baseline sleep need scores 100%. Sleeping 50% or less of your baseline scores 0%.',
+                      userMetric: summary?.sleepHours != null
+                          ? '${summary!.sleepHours!.toStringAsFixed(1)} hrs recorded'
+                          : 'Awaiting sleep session',
+                      baselineMetric: summary?.baselineSleepHours != null
+                          ? '${summary!.baselineSleepHours!.toStringAsFixed(1)} hrs baseline'
+                          : '8.0 hrs standard target',
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ── Pillar 3: Blood Oxygen Saturation (15%) ──
+                    _PillarCard(
+                      title: '3. BLOOD OXYGEN (SpO2)',
+                      weight: '15% WEIGHT',
+                      weightFraction: 0.15,
+                      todayScore: spo2Component,
+                      icon: Icons.air,
+                      formula: 'Drop = Baseline SpO2 - Nocturnal SpO2',
+                      explanation:
+                          'Blood oxygen levels reflect pulmonary recovery and respiratory stability during sleep. Maintaining nominal saturation (>=95%) scores 100%. Dips greater than 5% scale down the score proportionally.',
+                      userMetric: summary?.spo2 != null
+                          ? '${summary!.spo2!.toStringAsFixed(0)}% SpO2'
+                          : 'Awaiting sensor log',
+                      baselineMetric: '>=95% nominal',
+                    ),
+                    const SizedBox(height: 20),
+
+                    // ── Dynamic Re-weighting Card ──
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: RecovaColors.surfaceElevation1,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: RecovaColors.borderSubtle),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Row(
+                            children: [
+                              Icon(Icons.tune,
+                                  size: 15, color: RecovaColors.monochromeWhite),
+                              SizedBox(width: 8),
+                              Text(
+                                'DYNAMIC RE-WEIGHTING',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.2,
+                                  color: RecovaColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'If your wearable lacks a specific sensor (such as SpO2 or continuous HRV), Recova\'s algorithm automatically re-normalizes the active pillars so the composite score remains calibrated to 100% without artificial penalties.',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              height: 1.5,
+                              color: RecovaColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ── Zero Cloud Privacy Guarantee ──
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: RecovaColors.surfaceElevation1,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: RecovaColors.borderSubtle),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Row(
+                            children: [
+                              Icon(Icons.lock_outline,
+                                  size: 15, color: RecovaColors.monochromeWhite),
+                              SizedBox(width: 8),
+                              Text(
+                                'ON-DEVICE COMPUTATION',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.2,
+                                  color: RecovaColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'All baselines, standard deviations, and composite formulas are computed locally on your device via SQLite. Zero telemetry is sent to any external server or cloud provider.',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              height: 1.5,
+                              color: RecovaColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PillarCard extends StatelessWidget {
+  final String title;
+  final String weight;
+  final double weightFraction;
+  final double todayScore;
+  final IconData icon;
+  final String formula;
+  final String explanation;
+  final String userMetric;
+  final String baselineMetric;
+
+  const _PillarCard({
+    required this.title,
+    required this.weight,
+    required this.weightFraction,
+    required this.todayScore,
+    required this.icon,
+    required this.formula,
+    required this.explanation,
+    required this.userMetric,
+    required this.baselineMetric,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: RecovaColors.surfaceElevation1,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: RecovaColors.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 16, color: RecovaColors.monochromeWhite),
+                  const SizedBox(width: 8),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: RecovaColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: RecovaColors.surfaceElevation2,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: RecovaColors.borderSubtle),
+                ),
+                child: Text(
+                  weight,
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                    color: RecovaColors.monochromeWhite,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Live Sub-Score Bar
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'PILLAR COMPONENT SCORE',
+                style: TextStyle(
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
+                  color: RecovaColors.textTertiary,
+                ),
+              ),
+              Text(
+                '${todayScore.toInt()} / 100',
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: RecovaColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: LinearProgressIndicator(
+              value: (todayScore / 100).clamp(0.0, 1.0),
+              minHeight: 4,
+              backgroundColor: Colors.white.withValues(alpha: 0.08),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                RecovaColors.monochromeWhite,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // User live stats vs baseline
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: RecovaColors.surfaceElevation2,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'TODAY RECORDED',
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w600,
+                          color: RecovaColors.textTertiary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        userMetric,
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: RecovaColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text(
+                        'CALIBRATED TARGET',
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w600,
+                          color: RecovaColors.textTertiary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        baselineMetric,
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: RecovaColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Formula & Explanation
+          Text(
+            formula,
+            style: const TextStyle(
+              fontSize: 9.5,
+              fontFamily: 'monospace',
+              color: RecovaColors.textTertiary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            explanation,
+            style: const TextStyle(
+              fontSize: 11,
+              height: 1.45,
+              color: RecovaColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

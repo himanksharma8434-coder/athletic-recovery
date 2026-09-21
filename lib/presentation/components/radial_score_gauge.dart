@@ -8,11 +8,13 @@ import '../../core/theme/recova_colors.dart';
 class RadialScoreGauge extends StatefulWidget {
   final double? score;
   final double size;
+  final VoidCallback? onTap;
 
   const RadialScoreGauge({
     super.key,
     required this.score,
     this.size = 200,
+    this.onTap,
   });
 
   @override
@@ -48,12 +50,15 @@ class _RadialScoreGaugeState extends State<RadialScoreGauge>
     final effectiveScore = widget.score ?? 0;
     final tier = RecoveryTier.fromScore(widget.score);
 
-    return SizedBox(
-      width: widget.size,
-      height: widget.size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.onTap,
+      child: SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
           // Background ambient subtle radial depth (No neon bloom)
           Container(
             width: widget.size * 0.72,
@@ -175,10 +180,43 @@ class _RadialScoreGaugeState extends State<RadialScoreGauge>
                   );
                 },
               ),
+              if (widget.onTap != null) ...[
+                const SizedBox(height: 5),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'HOW IT\'S CALCULATED',
+                        style: TextStyle(
+                          fontSize: 7,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                          color: RecovaColors.textTertiary,
+                        ),
+                      ),
+                      SizedBox(width: 2),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 9,
+                        color: RecovaColors.textTertiary,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ],
       ),
+    ),
     );
   }
 }

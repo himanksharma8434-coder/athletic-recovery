@@ -8,6 +8,7 @@ class VitalMetricTile extends StatelessWidget {
   final String deltaText;
   final Color? deltaColor;
   final IconData? icon;
+  final VoidCallback? onTap;
 
   const VitalMetricTile({
     super.key,
@@ -17,6 +18,7 @@ class VitalMetricTile extends StatelessWidget {
     required this.deltaText,
     this.deltaColor,
     this.icon,
+    this.onTap,
   });
 
   @override
@@ -26,7 +28,7 @@ class VitalMetricTile extends StatelessWidget {
         ? RecovaColors.nothingRed
         : RecovaColors.textSecondary;
 
-    return Container(
+    Widget content = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: RecovaColors.surfaceElevation1,
@@ -89,7 +91,6 @@ class VitalMetricTile extends StatelessWidget {
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
             children: [
               if (effectiveDeltaColor == RecovaColors.nothingRed) ...[
                 Container(
@@ -120,5 +121,15 @@ class VitalMetricTile extends StatelessWidget {
         ],
       ),
     );
+
+    if (onTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: content,
+      );
+    }
+
+    return content;
   }
 }
