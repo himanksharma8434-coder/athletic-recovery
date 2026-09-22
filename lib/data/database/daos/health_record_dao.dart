@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../tables/raw_health_records.dart';
 import '../app_database.dart';
+import '../../../core/utils/ppg_hrv_calculator.dart';
 
 part 'health_record_dao.g.dart';
 
@@ -130,15 +131,119 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
     return result.read(count)!;
   }
 
-  /// Get total steps within a date range.
+  /// Get total steps within a date range (strictly for the requested interval).
+  ///
+  /// Prevents:
+  /// 1. Weekly/multi-day rollups (>24h duration) from contaminating day steps.
+  /// 2. Multi-source doubling (e.g. Phone accelerometer + CMF Watch).
+  /// 3. Cumulative daily updates from being repeatedly summed.
   Future<int> getTotalSteps({required DateTime start, required DateTime end}) async {
-    final records = await getRecordsByType('STEPS', start: start, end: end);
-    double sum = 0;
-    for (final r in records) {
-      sum += r.value;
+    final rawRecords = await (select(rawHealthRecords)
+          ..where((r) =>
+              r.recordType.equals('STEPS') &
+              r.startTime.isSmallerOrEqualValue(end) &
+              r.endTime.isBiggerOrEqualValue(start))
+          ..orderBy([(r) => OrderingTerm.asc(r.startTime)]))
+        .get();
+
+    if (rawRecords.isEmpty) return 0;
+
+    // 1. Filter out records that span > 24 hours (weekly or multi-day rollups)
+    final validRecords = rawRecords.where((r) {
+      final duration = r.endTime.difference(r.startTime);
+      if (duration.inHours > 24) return false;
+      if (r.value <= 0) return false;
+      return true;
+    }).toList();
+
+    if (validRecords.isEmpty) return 0;
+
+    // 2. Group records by sourceId
+    final Map<String, List<RawHealthRecord>> recordsBySource = {};
+    for (final r in validRecords) {
+      recordsBySource.putIfAbsent(r.sourceId, () => []).add(r);
     }
-    return sum.round();
+
+    // 3. For each source, compute its daily total, detecting cumulative vs delta reporting
+    final Map<String, int> sourceTotals = {};
+    for (final entry in recordsBySource.entries) {
+      final source = entry.key;
+      final srcRecords = entry.value;
+
+      if (srcRecords.isEmpty) continue;
+      if (srcRecords.length == 1) {
+        sourceTotals[source] = srcRecords.first.value.round();
+        continue;
+      }
+
+      // Check if records represent cumulative daily updates via temporal interval overlap
+      bool hasTimeOverlaps = false;
+      for (int i = 0; i < srcRecords.length; i++) {
+        for (int j = i + 1; j < srcRecords.length; j++) {
+          final a = srcRecords[i];
+          final b = srcRecords[j];
+          if (a.startTime == b.startTime) {
+            hasTimeOverlaps = true;
+            break;
+          }
+          final overlapStart =
+              a.startTime.isAfter(b.startTime) ? a.startTime : b.startTime;
+          final overlapEnd =
+              a.endTime.isBefore(b.endTime) ? a.endTime : b.endTime;
+          if (overlapEnd.isAfter(overlapStart)) {
+            if (overlapEnd.difference(overlapStart).inMinutes > 5) {
+              hasTimeOverlaps = true;
+              break;
+            }
+          }
+        }
+        if (hasTimeOverlaps) break;
+      }
+
+      double maxVal = 0;
+      double sumVal = 0;
+      for (final r in srcRecords) {
+        if (r.value > maxVal) maxVal = r.value;
+        sumVal += r.value;
+      }
+
+      if (hasTimeOverlaps) {
+        sourceTotals[source] = maxVal.round();
+      } else {
+        sourceTotals[source] = sumVal.round();
+      }
+    }
+
+    if (sourceTotals.isEmpty) return 0;
+
+    // 4. Multi-source de-duplication:
+    // If multiple sources exist (e.g. phone pedometer + Nothing X / CMF Watch),
+    // DO NOT SUM THEM TOGETHER! Summing them doubles or triples steps.
+    // Instead, prefer Nothing/CMF/wearable source, or take the maximum realistic source count.
+    int bestSteps = 0;
+    String? preferredSource;
+
+    for (final source in sourceTotals.keys) {
+      final lower = source.toLowerCase();
+      if (lower.contains('nothing') ||
+          lower.contains('cmf') ||
+          lower.contains('watch') ||
+          lower.contains('wear')) {
+        preferredSource = source;
+        break;
+      }
+    }
+
+    if (preferredSource != null && sourceTotals[preferredSource]! > 0) {
+      bestSteps = sourceTotals[preferredSource]!;
+    } else {
+      bestSteps = sourceTotals.values.reduce((a, b) => a > b ? a : b);
+    }
+
+    // 5. Sanity cap: single-day human limit (80,000 steps)
+    return bestSteps.clamp(0, 80000);
   }
+
 
   /// Get total calories (active or total) within a date range.
   Future<double> getTotalCalories({
@@ -177,6 +282,8 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Get latest HRV (SDNN or RMSSD) record within a date range.
+  /// If no direct HRV records exist from the wearable, derives HRV (rMSSD)
+  /// from optical Photoplethysmography (PPG) heart rate telemetry samples.
   Future<double?> getLatestHrv({
     required DateTime start,
     required DateTime end,
@@ -190,7 +297,17 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
           ..orderBy([(r) => OrderingTerm.desc(r.startTime)])
           ..limit(1))
         .get();
-    return records.isEmpty ? null : records.first.value;
+    if (records.isNotEmpty) return records.first.value;
+
+    // Fallback: derive HRV (rMSSD) from resting / overnight PPG heart rate records
+    final hrRecords = await (select(rawHealthRecords)
+          ..where((r) =>
+              r.recordType.equals('HEART_RATE') &
+              r.startTime.isBiggerOrEqualValue(start) &
+              r.endTime.isSmallerOrEqualValue(end))
+          ..orderBy([(r) => OrderingTerm.asc(r.startTime)]))
+        .get();
+    return PpgHrvCalculator.computeRmssdFromHeartRates(hrRecords);
   }
 
   /// Get sleep stages records within a date range.
@@ -287,5 +404,92 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
           ..limit(1))
         .get();
     return hrRecords.isEmpty ? null : hrRecords.first.value;
+  }
+
+  /// Get today's latest respiratory rate reading.
+  Future<double?> getTodayLatestRespiratoryRate({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final records = await (select(rawHealthRecords)
+          ..where((r) =>
+              r.recordType.equals('RESPIRATORY_RATE') &
+              r.startTime.isBiggerOrEqualValue(start) &
+              r.endTime.isSmallerOrEqualValue(end))
+          ..orderBy([(r) => OrderingTerm.desc(r.startTime)])
+          ..limit(1))
+        .get();
+    return records.isEmpty ? null : records.first.value;
+  }
+
+  /// Get HRV records for charting and analysis.
+  /// If direct records are not present from the wearable, derives optical PPG rMSSD records from heart rate telemetry.
+  Future<List<RawHealthRecord>> getHrvRecords({
+    required DateTime start,
+    required DateTime end,
+    bool allowIntraday = false,
+  }) async {
+    final direct = await (select(rawHealthRecords)
+          ..where((r) =>
+              (r.recordType.equals('HEART_RATE_VARIABILITY_SDNN') |
+                  r.recordType.equals('HEART_RATE_VARIABILITY_RMSSD')) &
+              r.startTime.isBiggerOrEqualValue(start) &
+              r.endTime.isSmallerOrEqualValue(end))
+          ..orderBy([(r) => OrderingTerm.asc(r.startTime)]))
+        .get();
+    if (direct.isNotEmpty) return direct;
+
+    // Fallback: derive optical PPG HRV from heart rate records
+    final hrRecords = await (select(rawHealthRecords)
+          ..where((r) =>
+              r.recordType.equals('HEART_RATE') &
+              r.startTime.isBiggerOrEqualValue(start) &
+              r.endTime.isSmallerOrEqualValue(end))
+          ..orderBy([(r) => OrderingTerm.asc(r.startTime)]))
+        .get();
+
+    final buckets = <String, List<RawHealthRecord>>{};
+    for (final r in hrRecords) {
+      final key = allowIntraday
+          ? '${r.startTime.year}-${r.startTime.month}-${r.startTime.day}-${(r.startTime.hour ~/ 2) * 2}'
+          : '${r.startTime.year}-${r.startTime.month}-${r.startTime.day}';
+      buckets.putIfAbsent(key, () => []).add(r);
+    }
+
+    final ppgRecords = <RawHealthRecord>[];
+    for (final bucketRecords in buckets.values) {
+      final rmssd = PpgHrvCalculator.computeRmssdFromHeartRates(bucketRecords);
+      if (rmssd != null) {
+        ppgRecords.add(bucketRecords.first.copyWith(
+          recordType: 'HEART_RATE_VARIABILITY_RMSSD',
+          value: rmssd,
+          unit: 'MILLISECOND',
+        ));
+      }
+    }
+    return ppgRecords;
+  }
+
+  /// Get all HRV records for rolling baseline calculation.
+  /// If no direct HRV records exist from the wearable, derives daily PPG rMSSD records from heart rates.
+  Future<List<RawHealthRecord>> getHrvBaselineRecords({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    return getHrvRecords(start: start, end: end, allowIntraday: false);
+  }
+
+  /// Get all respiratory rate records for rolling baseline calculation.
+  Future<List<RawHealthRecord>> getRespiratoryRateBaselineRecords({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    return (select(rawHealthRecords)
+          ..where((r) =>
+              r.recordType.equals('RESPIRATORY_RATE') &
+              r.startTime.isBiggerOrEqualValue(start) &
+              r.endTime.isSmallerOrEqualValue(end))
+          ..orderBy([(r) => OrderingTerm.asc(r.startTime)]))
+        .get();
   }
 }

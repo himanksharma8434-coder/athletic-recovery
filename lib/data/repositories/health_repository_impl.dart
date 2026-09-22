@@ -7,6 +7,7 @@ import '../../domain/repositories/health_source_repository.dart';
 import '../../domain/usecases/compute_baselines.dart';
 import '../../domain/usecases/compute_vo2max.dart';
 import '../../domain/usecases/compute_recovery_score.dart';
+import '../../core/utils/sleep_data_sanitizer.dart';
 import '../database/app_database.dart';
 import '../datasources/health_platform_datasource.dart';
 
@@ -101,6 +102,28 @@ class HealthRepositoryImpl implements HealthSourceRepository {
             await recordDao.upsertRecords(companions);
             totalWritten += records.length;
 
+            // For STEPS: Also fetch authoritative de-duplicated day total from platform aggregate
+            if (typeName == 'STEPS') {
+              try {
+                final dayStart = AppDateUtils.startOfDay(now);
+                final aggSteps = await _platform.getTotalStepsInInterval(
+                  startTime: dayStart,
+                  endTime: now,
+                );
+                if (aggSteps != null && aggSteps > 0) {
+                  await recordDao.upsertRecord(RawHealthRecordsCompanion(
+                    recordType: const Value('STEPS'),
+                    value: Value(aggSteps.toDouble()),
+                    unit: const Value('COUNT'),
+                    startTime: Value(dayStart),
+                    endTime: Value(now),
+                    sourceId: const Value('health_connect_aggregate'),
+                    syncedAt: Value(now),
+                  ));
+                }
+              } catch (_) {}
+            }
+
             // Update lastSyncedAt ONLY after successful write
             await syncDao.updateLastSyncedAt(typeName, now);
           }
@@ -159,12 +182,41 @@ class HealthRepositoryImpl implements HealthSourceRepository {
             .map((r) => (date: r.startTime, value: r.value))
             .toList());
 
-    // ── Sleep baseline ──
+    // ── Sleep baseline (clean nightly extractions to prevent multi-source duplicates) ──
     final sleepRecords = await recordDao.getSleepRecords(
-      start: AppDateUtils.daysAgo(7, from: now),
+      start: AppDateUtils.daysAgo(10, from: now),
       end: now,
     );
-    final sleepDurations = sleepRecords.map((r) => r.value).toList();
+    final stageRecords = await recordDao.getSleepStages(
+      start: AppDateUtils.daysAgo(10, from: now),
+      end: now,
+    );
+
+    final List<double> sleepDurations = [];
+    for (int i = 1; i <= 7; i++) {
+      final nightEnd = AppDateUtils.daysAgo(i - 1, from: today);
+      final nightStart = nightEnd.subtract(const Duration(hours: 14));
+      final nightWindowEnd = nightEnd.add(const Duration(hours: 12));
+
+      final nightStages = stageRecords
+          .where((r) =>
+              r.endTime.isAfter(nightStart) && r.endTime.isBefore(nightWindowEnd))
+          .toList();
+      final nightSessions = sleepRecords
+          .where((r) =>
+              r.endTime.isAfter(nightStart) && r.endTime.isBefore(nightWindowEnd))
+          .toList();
+
+      if (nightStages.isNotEmpty || nightSessions.isNotEmpty) {
+        final clean = SleepDataSanitizer.sanitizeOvernightStages(
+          stageRecords: nightStages,
+          sessionRecord: nightSessions.isNotEmpty ? nightSessions.last : null,
+        );
+        if (clean.totalAsleepMinutes >= 60 && clean.totalAsleepMinutes <= 720) {
+          sleepDurations.add(clean.totalAsleepMinutes.toDouble());
+        }
+      }
+    }
 
     // ── SpO2 baseline ──
     final spo2Records = await recordDao.getSpo2Records(
@@ -193,7 +245,9 @@ class HealthRepositoryImpl implements HealthSourceRepository {
     final metricDao = _db.derivedMetricDao;
 
     final baseline = await baselineDao.getBaseline(today);
-    if (baseline == null) return;
+    final rhrBase = baseline?.restingHrBaseline7d ?? 60.0;
+    final sleepBase = baseline?.sleepDurationBaseline7d ?? 480.0;
+    final spo2Base = baseline?.spo2Baseline7d ?? 97.0;
 
     // ── VO2max ──
     final maxHr = await recordDao.getMaxExerciseHr(
@@ -211,13 +265,26 @@ class HealthRepositoryImpl implements HealthSourceRepository {
     }
 
     final vo2max = _computeVo2Max(
-      restingHr7dBaseline: baseline.restingHrBaseline7d,
+      restingHr7dBaseline: rhrBase,
       maxHrFromExercise: maxHr,
       userAge: userAge,
     );
 
-    // ── Recovery Score ──
-    // Get today's latest RHR (or fallback to today's minimum HR if only continuous heart rate is logged)
+    // ── Recovery Score Signals ──
+    // 1. Real HRV (SDNN / RMSSD) & rolling baseline
+    final latestHrv = await recordDao.getLatestHrv(
+      start: AppDateUtils.daysAgo(1, from: now),
+      end: now,
+    );
+    final hrvHistory = await recordDao.getHrvBaselineRecords(
+      start: AppDateUtils.daysAgo(14, from: now),
+      end: now,
+    );
+    final baselineHrv = _computeBaselines
+            .hrvBaseline(hrvHistory.map((r) => r.value).toList()) ??
+        55.0;
+
+    // 2. Resting Heart Rate
     final todayRhrRecords = await recordDao.getRestingHrRecords(
       start: today,
       end: now,
@@ -230,29 +297,62 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       todayRhr = todayRhrRecords.map((r) => r.value).reduce((a, b) => a < b ? a : b);
     }
 
-    // Get last night's sleep
-    final yesterday = today.subtract(const Duration(days: 1));
-    final sleepRecords = await recordDao.getSleepRecords(
-      start: yesterday,
-      end: today,
+    // 3. Clean Overnight Sleep & Stages (including daytime and evening naps)
+    final sleepSearchStart = today.subtract(const Duration(hours: 10));
+    final nightStages = await recordDao.getSleepStages(
+      start: sleepSearchStart,
+      end: now,
     );
-    final lastNightSleep =
-        sleepRecords.isEmpty ? null : sleepRecords.last.value;
+    final nightSessions = await recordDao.getSleepRecords(
+      start: sleepSearchStart,
+      end: now,
+    );
+    final cleanDistributed = SleepDataSanitizer.extractDistributedSessions(
+      stageRecords: nightStages,
+      sessionRecords: nightSessions,
+      fallbackHours: sleepBase / 60.0,
+    );
+    final double? totalSleepMinutes = cleanDistributed.totalMinutes > 0
+        ? cleanDistributed.totalMinutes.toDouble()
+        : null;
 
-    // Get today's SpO2
+    // 4. Blood Oxygen (SpO2)
     final spo2Records = await recordDao.getSpo2Records(
       start: today,
       end: now,
     );
     final todaySpo2 = spo2Records.isEmpty ? null : spo2Records.last.value;
 
+    // 5. Respiratory Rate (RPM)
+    final todayResp = await recordDao.getTodayLatestRespiratoryRate(
+      start: today,
+      end: now,
+    );
+    final respHistory = await recordDao.getRespiratoryRateBaselineRecords(
+      start: AppDateUtils.daysAgo(14, from: now),
+      end: now,
+    );
+    final baselineResp = _computeBaselines
+            .respiratoryRateBaseline(respHistory.map((r) => r.value).toList()) ??
+        14.0;
+
     final recovery = _computeRecoveryScore(
+      todayHrv: latestHrv,
+      hrvBaseline: baselineHrv,
       todayRhr: todayRhr,
-      rhrBaseline7d: baseline.restingHrBaseline7d,
-      lastNightSleepMinutes: lastNightSleep,
-      sleepBaseline7d: baseline.sleepDurationBaseline7d,
+      rhrBaseline7d: rhrBase,
+      lastNightSleepMinutes: totalSleepMinutes,
+      sleepBaseline7d: sleepBase,
+      deepSleepMinutes: cleanDistributed.mainSleep.hasStageData
+          ? cleanDistributed.mainSleep.deepMinutes
+          : null,
+      remSleepMinutes: cleanDistributed.mainSleep.hasStageData
+          ? cleanDistributed.mainSleep.remMinutes
+          : null,
       todaySpo2: todaySpo2,
-      spo2Baseline7d: baseline.spo2Baseline7d,
+      spo2Baseline7d: spo2Base,
+      todayRespiratoryRate: todayResp,
+      respiratoryRateBaseline: baselineResp,
     );
 
     await metricDao.upsertMetric(DerivedMetricsCompanion(
@@ -282,9 +382,23 @@ class HealthRepositoryImpl implements HealthSourceRepository {
     final logs = await _db.syncDao.getRecentLogs(limit: 1);
     if (logs.isNotEmpty) lastSync = logs.first.timestamp;
 
-    // ── Real Steps & Calories ──
-    final todaySteps = await _db.healthRecordDao
-        .getTotalSteps(start: todayStart, end: now);
+    // ── Real Steps (Day Only, De-duplicated via Health Connect Aggregate) ──
+    int todaySteps = 0;
+    try {
+      final platformSteps = await _platform.getTotalStepsInInterval(
+        startTime: todayStart,
+        endTime: now,
+      );
+      if (platformSteps != null && platformSteps >= 0) {
+        todaySteps = platformSteps;
+      }
+    } catch (_) {}
+
+    if (todaySteps == 0) {
+      todaySteps = await _db.healthRecordDao
+          .getTotalSteps(start: todayStart, end: now);
+    }
+
     final activeCals = await _db.healthRecordDao
         .getTotalCalories(start: todayStart, end: now, activeOnly: true);
     final totalCals = await _db.healthRecordDao
@@ -311,39 +425,72 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       end: now,
     );
 
-    // ── Real Sleep Stages Breakdown ──
+    // ── Real Distributed Sleep & Stages (Night Sleep + Daytime/Evening Naps) ──
+    final sleepSearchStart = todayStart.subtract(const Duration(hours: 10));
+    final sleepSearchEnd = now;
+
     final rawSleepStages = await _db.healthRecordDao.getSleepStages(
-      start: AppDateUtils.daysAgo(1, from: now),
-      end: now,
+      start: sleepSearchStart,
+      end: sleepSearchEnd,
     );
-    int deepMin = 0;
-    int remMin = 0;
-    int lightMin = 0;
-    int awakeMin = 0;
-    for (final s in rawSleepStages) {
-      switch (s.recordType) {
-        case 'SLEEP_DEEP':
-          deepMin += s.value.toInt();
-          break;
-        case 'SLEEP_REM':
-          remMin += s.value.toInt();
-          break;
-        case 'SLEEP_LIGHT':
-          lightMin += s.value.toInt();
-          break;
-        case 'SLEEP_AWAKE':
-          awakeMin += s.value.toInt();
-          break;
-      }
-    }
-    final sleepStages = (deepMin + remMin + lightMin + awakeMin) > 0
+    final rawSleepSessions = await _db.healthRecordDao.getSleepRecords(
+      start: sleepSearchStart,
+      end: sleepSearchEnd,
+    );
+
+    final cleanDistributed = SleepDataSanitizer.extractDistributedSessions(
+      stageRecords: rawSleepStages,
+      sessionRecords: rawSleepSessions,
+      fallbackHours: baseline?.sleepDurationBaseline7d != null
+          ? baseline!.sleepDurationBaseline7d! / 60.0
+          : null,
+    );
+
+    final cleanSleep = cleanDistributed.mainSleep;
+
+    final sleepStages = cleanSleep.hasStageData
         ? SleepStageBreakdown(
-            deepMinutes: deepMin,
-            remMinutes: remMin,
-            lightMinutes: lightMin,
-            awakeMinutes: awakeMin,
+            deepMinutes: cleanSleep.deepMinutes,
+            remMinutes: cleanSleep.remMinutes,
+            lightMinutes: cleanSleep.coreMinutes,
+            awakeMinutes: cleanSleep.awakeMinutes,
           )
         : null;
+
+    final actualSleepHours = (cleanDistributed.totalHours > 0)
+        ? cleanDistributed.totalHours
+        : null;
+
+    final distributedSessions = cleanDistributed.sessions.map((s) {
+      final sData = s.sleepData;
+      final stBreakdown = sData.hasStageData
+          ? SleepStageBreakdown(
+              deepMinutes: sData.deepMinutes,
+              remMinutes: sData.remMinutes,
+              lightMinutes: sData.coreMinutes,
+              awakeMinutes: sData.awakeMinutes,
+            )
+          : null;
+
+      final type = s.sessionType == 'NIGHT_SLEEP'
+          ? SleepSessionType.nightSleep
+          : s.sessionType == 'EVENING_NAP'
+              ? SleepSessionType.eveningNap
+              : s.sessionType == 'AFTERNOON_NAP'
+                  ? SleepSessionType.afternoonNap
+                  : SleepSessionType.morningNap;
+
+      return DistributedSleepSession(
+        title: s.title,
+        type: type,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        durationHours: s.durationHours,
+        durationMinutes: s.durationMinutes,
+        stages: stBreakdown,
+        isMainSleep: s.isMainSleep,
+      );
+    }).toList();
 
     // ── Real Day Strain Computation (0 - 21 scale) ──
     final hrRecords = await _db.healthRecordDao
@@ -399,43 +546,126 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       end: now,
     );
 
-    // ── Last Night's Actual Sleep (not 7-day average) ──
-    // Search from yesterday 6pm to today noon to capture overnight sleep
-    final sleepSearchStart = todayStart.subtract(const Duration(hours: 6));
-    final sleepSearchEnd = todayStart.add(const Duration(hours: 12));
-    final lastNightSleep = await _db.healthRecordDao.getLastNightSleep(
-      start: sleepSearchStart,
-      end: sleepSearchEnd,
-    );
-    final actualSleepMinutes = lastNightSleep?.value;
-    final actualSleepHours = actualSleepMinutes != null
-        ? actualSleepMinutes / 60.0
-        : null;
-
     // ── Today's Actual SpO2 (not 7-day average) ──
     final todaySpo2 = await _db.healthRecordDao.getTodayLatestSpo2(
       start: todayStart,
       end: now,
     );
 
+    // ── Today's Actual Respiratory Rate ──
+    final todayResp = await _db.healthRecordDao.getTodayLatestRespiratoryRate(
+      start: todayStart,
+      end: now,
+    );
+
+    // ── Baselines (7-day / 14-day with clinical defaults) ──
+    final hrvHistory = await _db.healthRecordDao.getHrvBaselineRecords(
+      start: AppDateUtils.daysAgo(14, from: now),
+      end: now,
+    );
+    final baselineHrv = _computeBaselines
+            .hrvBaseline(hrvHistory.map((r) => r.value).toList()) ??
+        55.0;
+
+    final respHistory = await _db.healthRecordDao.getRespiratoryRateBaselineRecords(
+      start: AppDateUtils.daysAgo(14, from: now),
+      end: now,
+    );
+    final baselineResp = _computeBaselines
+            .respiratoryRateBaseline(respHistory.map((r) => r.value).toList()) ??
+        14.0;
+
+    final rhrBaseline = baseline?.restingHrBaseline30d ??
+        baseline?.restingHrBaseline7d ??
+        60.0;
+    final sleepBaselineMinutes = baseline?.sleepDurationBaseline7d ?? 480.0;
+    final spo2Baseline = baseline?.spo2Baseline7d ?? 97.0;
+
+    // ── Live Real-Time Multi-Pillar Recovery Score ──
+    final liveRecovery = _computeRecoveryScore(
+      todayHrv: latestHrv,
+      hrvBaseline: baselineHrv,
+      todayRhr: todayRhr ?? baseline?.restingHrBaseline7d,
+      rhrBaseline7d: rhrBaseline,
+      lastNightSleepMinutes:
+          actualSleepHours != null ? actualSleepHours * 60.0 : null,
+      sleepBaseline7d: sleepBaselineMinutes,
+      deepSleepMinutes:
+          cleanSleep.hasStageData ? cleanSleep.deepMinutes : null,
+      remSleepMinutes: cleanSleep.hasStageData ? cleanSleep.remMinutes : null,
+      todaySpo2: todaySpo2,
+      spo2Baseline7d: spo2Baseline,
+      todayRespiratoryRate: todayResp,
+      respiratoryRateBaseline: baselineResp,
+    );
+
+    // Dynamic Target Strain based on the live calculated score
+    final rec = liveRecovery.score;
+    if (rec >= 67) {
+      targetStrain = 14.0 + ((rec - 67) / 33.0) * 4.0;
+    } else if (rec >= 34) {
+      targetStrain = 10.0 + ((rec - 34) / 33.0) * 3.9;
+    } else {
+      targetStrain = 6.0 + (rec / 34.0) * 3.9;
+    }
+
+    // Recompute VO2max if needed
+    double? vo2max = metric?.estimatedVo2Max;
+    if (vo2max == null) {
+      final maxHr = await _db.healthRecordDao.getMaxExerciseHr(
+        start: AppDateUtils.daysAgo(60, from: now),
+        end: now,
+      );
+      int? userAge;
+      if (maxHr == null) {
+        final dob = await _platform.fetchDateOfBirth();
+        if (dob != null) {
+          userAge = (now.difference(dob).inDays / 365.25).floor();
+        }
+      }
+      vo2max = _computeVo2Max(
+        restingHr7dBaseline: rhrBaseline,
+        maxHrFromExercise: maxHr,
+        userAge: userAge,
+      );
+    }
+
+    // Persist today's live computed metric to SQLite so historical records are immediately up-to-date
+    await _db.derivedMetricDao.upsertMetric(DerivedMetricsCompanion(
+      date: Value(todayStart),
+      estimatedVo2Max: Value(vo2max),
+      recoveryScore: Value(liveRecovery.score),
+      recoveryComponentRhr: Value(liveRecovery.rhrComponent),
+      recoveryComponentSleep: Value(liveRecovery.sleepComponent),
+      recoveryComponentSpo2: Value(liveRecovery.spo2Component),
+      primaryFactor: Value(liveRecovery.primaryFactor),
+    ));
+
     return DerivedMetricSummary(
-      recoveryScore: metric?.recoveryScore,
-      recoveryComponentRhr: metric?.recoveryComponentRhr,
-      recoveryComponentSleep: metric?.recoveryComponentSleep,
-      recoveryComponentSpo2: metric?.recoveryComponentSpo2,
-      primaryFactor: metric?.primaryFactor,
-      estimatedVo2Max: metric?.estimatedVo2Max,
+      recoveryScore: liveRecovery.score,
+      recoveryComponentHrv: liveRecovery.hrvComponent,
+      recoveryComponentRhr: liveRecovery.rhrComponent,
+      recoveryComponentSleep: liveRecovery.sleepComponent,
+      recoveryComponentSpo2: liveRecovery.spo2Component,
+      recoveryComponentRespiratory: liveRecovery.respiratoryComponent,
+      primaryFactor: liveRecovery.primaryFactor,
+      estimatedVo2Max: vo2max,
       restingHr: todayRhr ?? baseline?.restingHrBaseline7d,
-      baselineRestingHr: baseline?.restingHrBaseline30d ?? baseline?.restingHrBaseline7d,
-      sleepHours: actualSleepHours ?? (baseline?.sleepDurationBaseline7d != null
-          ? baseline!.sleepDurationBaseline7d! / 60.0
-          : null),
-      baselineSleepHours: baseline?.sleepDurationBaseline7d != null
-          ? baseline!.sleepDurationBaseline7d! / 60.0
-          : null,
+      baselineRestingHr: rhrBaseline,
+      sleepHours: actualSleepHours ??
+          (baseline?.sleepDurationBaseline7d != null
+              ? (baseline!.sleepDurationBaseline7d! / 60.0).clamp(3.0, 12.0)
+              : null),
+      baselineSleepHours: sleepBaselineMinutes / 60.0,
+      nightSleepHours: cleanDistributed.nightHours > 0 ? cleanDistributed.nightHours : null,
+      napSleepHours: cleanDistributed.napHours > 0 ? cleanDistributed.napHours : null,
+      sleepSessions: distributedSessions,
       spo2: todaySpo2 ?? baseline?.spo2Baseline7d,
-      baselineSpo2: baseline?.spo2Baseline7d,
+      baselineSpo2: spo2Baseline,
       hrvMs: latestHrv,
+      baselineHrv: baselineHrv,
+      respiratoryRate: todayResp,
+      baselineRespiratoryRate: baselineResp,
       dayStrain: dayStrain > 0.0 ? dayStrain : null,
       targetStrain: targetStrain,
       activeCalories: activeCals > 0.0 ? activeCals : null,
