@@ -247,7 +247,7 @@ class StrainScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'PEDOMETER STEPS',
+                        'TODAY\'S STEPS',
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
@@ -257,11 +257,21 @@ class StrainScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        todaySteps != null ? '$todaySteps' : '--',
+                        todaySteps != null ? _formatNumber(todaySteps) : '--',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           color: RecovaColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'DAY TOTAL (00:00 - NOW)',
+                        style: TextStyle(
+                          fontSize: 7.5,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.4,
+                          color: RecovaColors.textMuted,
                         ),
                       ),
                     ],
@@ -434,4 +444,13 @@ class StrainScreen extends StatelessWidget {
       ),
     );
   }
+
+  String _formatNumber(int number) {
+    if (number >= 1000) {
+      final str = number.toString();
+      return '${str.substring(0, str.length - 3)},${str.substring(str.length - 3)}';
+    }
+    return number.toString();
+  }
 }
+
