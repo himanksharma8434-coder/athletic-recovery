@@ -70,7 +70,7 @@ class SleepPerformanceCard extends StatelessWidget {
                   child: Row(
                     children: const [
                       Icon(Icons.bedtime_outlined,
-                          size: 15, color: RecovaColors.monochromeSilver),
+                          size: 14, color: RecovaColors.textTertiary),
                       SizedBox(width: 8),
                       Flexible(
                         child: Text(
@@ -78,9 +78,9 @@ class SleepPerformanceCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.0,
                             color: RecovaColors.textTertiary,
                           ),
                         ),
@@ -97,15 +97,15 @@ class SleepPerformanceCard extends StatelessWidget {
                           const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: RecovaColors.surfaceElevation2,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: RecovaColors.borderSubtle),
                       ),
                       child: Text(
                         sleepPerf != null ? '$sleepPerf% PERFORMANCE' : '--',
                         style: const TextStyle(
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.6,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.4,
                           color: RecovaColors.monochromeWhite,
                         ),
                       ),
@@ -114,7 +114,7 @@ class SleepPerformanceCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       const Icon(
                         Icons.chevron_right,
-                        size: 15,
+                        size: 14,
                         color: RecovaColors.textTertiary,
                       ),
                     ],
@@ -137,9 +137,9 @@ class SleepPerformanceCard extends StatelessWidget {
                   Text(
                     hasSleep ? '${sleepH}h' : '--',
                     style: const TextStyle(
-                      fontSize: 32,
+                      fontSize: 30,
                       fontWeight: FontWeight.w300,
-                      letterSpacing: -1.0,
+                      letterSpacing: -0.8,
                       color: RecovaColors.textPrimary,
                     ),
                   ),
@@ -148,7 +148,7 @@ class SleepPerformanceCard extends StatelessWidget {
                     Text(
                       '${sleepM}m',
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 17,
                         fontWeight: FontWeight.w300,
                         color: RecovaColors.textSecondary,
                       ),
@@ -160,8 +160,8 @@ class SleepPerformanceCard extends StatelessWidget {
                 'TARGET: ${baselineH.toStringAsFixed(1)}h',
                 style: const TextStyle(
                   fontSize: 9.5,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.6,
                   color: RecovaColors.textTertiary,
                 ),
               ),
@@ -174,8 +174,8 @@ class SleepPerformanceCard extends StatelessWidget {
             debtText,
             style: TextStyle(
               fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
+              fontWeight: FontWeight.w400,
+              letterSpacing: 0.3,
               color: debtColor,
             ),
           ),
@@ -190,23 +190,21 @@ class SleepPerformanceCard extends StatelessWidget {
                 final durStr = sH > 0 ? '${sH}h ${sM}m' : '${sM}m';
                 final isNight = s.type == SleepSessionType.nightSleep;
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(
-                    color: isNight
-                        ? RecovaColors.surfaceElevation2
-                        : RecovaColors.nothingRed.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(4),
+                    color: RecovaColors.surfaceElevation2,
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: isNight
                           ? RecovaColors.borderSubtle
-                          : RecovaColors.nothingRed.withValues(alpha: 0.3),
+                          : RecovaColors.nothingRed.withValues(alpha: 0.25),
                     ),
                   ),
                   child: Text(
-                    '${s.title}: $durStr',
+                    '${s.title} • $durStr',
                     style: TextStyle(
-                      fontSize: 8.5,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
                       color: isNight ? RecovaColors.textSecondary : RecovaColors.nothingRed,
                     ),
                   ),
@@ -218,9 +216,9 @@ class SleepPerformanceCard extends StatelessWidget {
 
           // ── Monochrome Stage Distribution Bar ──
           ClipRRect(
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(2),
             child: SizedBox(
-              height: 5,
+              height: 4,
               child: hasStages
                   ? Row(
                       children: [
