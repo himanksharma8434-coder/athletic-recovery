@@ -220,6 +220,21 @@ class HealthPlatformDatasource {
     );
   }
 
+  /// Read total step count directly from the platform aggregate API
+  /// (Health Connect aggregate / HealthKit statistics query).
+  /// This automatically de-duplicates overlapping sources (e.g. phone + watch)
+  /// and ensures only steps strictly within the requested interval (e.g. today only) are counted.
+  Future<int?> getTotalStepsInInterval({
+    required DateTime startTime,
+    required DateTime endTime,
+  }) async {
+    try {
+      return await health.getTotalStepsInInterval(startTime, endTime);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Attempts to fetch the user's date of birth from the platform health store.
   /// Used for age-based HRmax fallback without asking the user manually.
   Future<DateTime?> fetchDateOfBirth() async {
@@ -240,3 +255,4 @@ class HealthPlatformDatasource {
     return null;
   }
 }
+
