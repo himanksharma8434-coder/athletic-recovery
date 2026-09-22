@@ -29,10 +29,10 @@ class VitalMetricTile extends StatelessWidget {
         : RecovaColors.textSecondary;
 
     Widget content = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
       decoration: BoxDecoration(
         color: RecovaColors.surfaceElevation1,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: RecovaColors.borderSubtle),
       ),
       child: Column(
@@ -42,7 +42,7 @@ class VitalMetricTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 11, color: RecovaColors.textTertiary),
+                Icon(icon, size: 12, color: RecovaColors.textTertiary),
                 const SizedBox(width: 4),
               ],
               Flexible(
@@ -51,16 +51,16 @@ class VitalMetricTile extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 8.5,
+                    fontSize: 9,
                     fontWeight: FontWeight.w600,
-                    letterSpacing: 1.1,
+                    letterSpacing: 0.8,
                     color: RecovaColors.textTertiary,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -69,9 +69,9 @@ class VitalMetricTile extends StatelessWidget {
               Text(
                 value,
                 style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: -0.4,
                   color: RecovaColors.textPrimary,
                 ),
               ),
@@ -80,8 +80,8 @@ class VitalMetricTile extends StatelessWidget {
                 Text(
                   unit,
                   style: const TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
                     color: RecovaColors.textTertiary,
                   ),
                 ),
@@ -96,7 +96,7 @@ class VitalMetricTile extends StatelessWidget {
                 Container(
                   width: 4,
                   height: 4,
-                  margin: const EdgeInsets.only(right: 3),
+                  margin: const EdgeInsets.only(right: 4),
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     color: RecovaColors.nothingRed,
@@ -109,9 +109,9 @@ class VitalMetricTile extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.4,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 0.2,
                     color: effectiveDeltaColor,
                   ),
                 ),
