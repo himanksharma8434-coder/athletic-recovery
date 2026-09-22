@@ -8,6 +8,7 @@ class SleepPerformanceCard extends StatelessWidget {
   final double? sleepHours;
   final double? baselineSleepHours;
   final SleepStageBreakdown? sleepStages;
+  final List<DistributedSleepSession> sleepSessions;
   final VoidCallback? onTap;
 
   const SleepPerformanceCard({
@@ -15,6 +16,7 @@ class SleepPerformanceCard extends StatelessWidget {
     this.sleepHours,
     this.baselineSleepHours,
     this.sleepStages,
+    this.sleepSessions = const [],
     this.onTap,
   });
 
@@ -177,6 +179,41 @@ class SleepPerformanceCard extends StatelessWidget {
               color: debtColor,
             ),
           ),
+          if (sleepSessions.length > 1) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: sleepSessions.map((s) {
+                final sH = s.durationHours.floor();
+                final sM = s.durationMinutes % 60;
+                final durStr = sH > 0 ? '${sH}h ${sM}m' : '${sM}m';
+                final isNight = s.type == SleepSessionType.nightSleep;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isNight
+                        ? RecovaColors.surfaceElevation2
+                        : RecovaColors.nothingRed.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: isNight
+                          ? RecovaColors.borderSubtle
+                          : RecovaColors.nothingRed.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    '${s.title}: $durStr',
+                    style: TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w600,
+                      color: isNight ? RecovaColors.textSecondary : RecovaColors.nothingRed,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
           const SizedBox(height: 14),
 
           // ── Monochrome Stage Distribution Bar ──
