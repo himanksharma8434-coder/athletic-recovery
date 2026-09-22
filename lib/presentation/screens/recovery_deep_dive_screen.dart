@@ -105,8 +105,18 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 _buildMetricProgressRow(
+                  label: 'HEART RATE VARIABILITY (HRV)',
+                  weight: '40% WEIGHT',
+                  score: summary?.recoveryComponentHrv,
+                  valueText: summary?.hrvMs != null
+                      ? '${summary!.hrvMs!.toInt()} ms'
+                      : '--',
+                  color: RecovaColors.monochromeWhite,
+                ),
+                const SizedBox(height: 14),
+                _buildMetricProgressRow(
                   label: 'RESTING HEART RATE',
-                  weight: '50% WEIGHT',
+                  weight: '30% WEIGHT',
                   score: summary?.recoveryComponentRhr,
                   valueText: summary?.restingHr != null
                       ? '${summary!.restingHr!.toInt()} bpm'
@@ -116,7 +126,7 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
                 const SizedBox(height: 14),
                 _buildMetricProgressRow(
                   label: 'SLEEP DURATION & ARCHITECTURE',
-                  weight: '35% WEIGHT',
+                  weight: '20% WEIGHT',
                   score: summary?.recoveryComponentSleep,
                   valueText: summary?.sleepHours != null
                       ? '${summary!.sleepHours!.toStringAsFixed(1)} hrs'
@@ -125,8 +135,8 @@ class RecoveryDeepDiveScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 _buildMetricProgressRow(
-                  label: 'BLOOD OXYGEN (SPO2)',
-                  weight: '15% WEIGHT',
+                  label: 'BLOOD OXYGEN & RESPIRATION',
+                  weight: '10% WEIGHT',
                   score: summary?.recoveryComponentSpo2,
                   valueText: summary?.spo2 != null
                       ? '${summary!.spo2!.toStringAsFixed(0)}%'
