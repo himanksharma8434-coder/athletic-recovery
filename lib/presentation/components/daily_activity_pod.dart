@@ -45,7 +45,7 @@ class DailyActivityPod extends StatelessWidget {
                   child: Row(
                     children: const [
                       Icon(Icons.directions_run,
-                          size: 15, color: RecovaColors.monochromeWhite),
+                          size: 14, color: RecovaColors.textTertiary),
                       SizedBox(width: 8),
                       Flexible(
                         child: Text(
@@ -53,9 +53,9 @@ class DailyActivityPod extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.0,
                             color: RecovaColors.textTertiary,
                           ),
                         ),
@@ -65,20 +65,30 @@ class DailyActivityPod extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      steps > 0 ? '${(stepRatio * 100).toInt()}% GOAL' : '--',
-                      style: const TextStyle(
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.6,
-                        color: RecovaColors.monochromeWhite,
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: RecovaColors.surfaceElevation2,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: RecovaColors.borderSubtle),
+                      ),
+                      child: Text(
+                        steps > 0 ? '${(stepRatio * 100).toInt()}% GOAL' : '--',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.4,
+                          color: RecovaColors.monochromeWhite,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     const Icon(
                       Icons.chevron_right,
-                      size: 12,
+                      size: 14,
                       color: RecovaColors.textTertiary,
                     ),
                   ],
@@ -90,7 +100,7 @@ class DailyActivityPod extends StatelessWidget {
             // ── 3 Column Activity Metrics ──
             Row(
               children: [
-                // Steps (Day Only)
+                // Steps
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,13 +114,13 @@ class DailyActivityPod extends StatelessWidget {
                           color: RecovaColors.textTertiary,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Text(
                         steps > 0 ? _formatNumber(steps) : '--',
                         style: const TextStyle(
                           fontSize: 18,
-                          fontWeight: FontWeight.w300,
-                          letterSpacing: -0.5,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: -0.4,
                           color: RecovaColors.textPrimary,
                         ),
                       ),
@@ -119,6 +129,7 @@ class DailyActivityPod extends StatelessWidget {
                         'TODAY • / 10,000',
                         style: TextStyle(
                           fontSize: 9,
+                          fontWeight: FontWeight.w400,
                           color: RecovaColors.textMuted,
                         ),
                       ),
@@ -128,7 +139,7 @@ class DailyActivityPod extends StatelessWidget {
 
               Container(
                 width: 1,
-                height: 32,
+                height: 30,
                 color: RecovaColors.borderSubtle,
               ),
               const SizedBox(width: 12),
@@ -139,29 +150,30 @@ class DailyActivityPod extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'ACTIVE BURN',
+                      'ACTIVE',
                       style: TextStyle(
-                        fontSize: 8.5,
+                        fontSize: 9,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.8,
                         color: RecovaColors.textTertiary,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       activeKcal > 0 ? '$activeKcal' : '--',
                       style: const TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: -0.5,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: -0.4,
                         color: RecovaColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     const Text(
-                      'kcal active',
+                      'kcal',
                       style: TextStyle(
-                        fontSize: 9,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w400,
                         color: RecovaColors.textMuted,
                       ),
                     ),
@@ -171,7 +183,7 @@ class DailyActivityPod extends StatelessWidget {
 
               Container(
                 width: 1,
-                height: 32,
+                height: 30,
                 color: RecovaColors.borderSubtle,
               ),
               const SizedBox(width: 12),
@@ -182,29 +194,30 @@ class DailyActivityPod extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'TOTAL BURN',
+                      'TOTAL',
                       style: TextStyle(
-                        fontSize: 8.5,
+                        fontSize: 9,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.8,
                         color: RecovaColors.textTertiary,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       totalKcal > 0 ? '$totalKcal' : '--',
                       style: const TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: -0.5,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: -0.4,
                         color: RecovaColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     const Text(
-                      'kcal with BMR',
+                      'kcal',
                       style: TextStyle(
-                        fontSize: 9,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w400,
                         color: RecovaColors.textMuted,
                       ),
                     ),
@@ -213,15 +226,15 @@ class DailyActivityPod extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           // ── Progress Bar ──
           ClipRRect(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(1.5),
             child: LinearProgressIndicator(
               value: stepRatio,
-              minHeight: 3.5,
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
+              minHeight: 3.0,
+              backgroundColor: Colors.white.withValues(alpha: 0.06),
               valueColor: const AlwaysStoppedAnimation<Color>(
                 RecovaColors.monochromeWhite,
               ),
