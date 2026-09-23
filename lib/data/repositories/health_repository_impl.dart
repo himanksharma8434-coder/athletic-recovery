@@ -380,11 +380,13 @@ class HealthRepositoryImpl implements HealthSourceRepository {
   Future<void> recomputeHistory({int days = 30}) async {
     final now = DateTime.now();
     for (int i = days; i >= 0; i--) {
-      final targetDate = AppDateUtils.daysAgo(i, from: now);
+      final day = now.subtract(Duration(days: i));
+      final targetDate = DateTime(day.year, day.month, day.day, 23, 59, 59);
       await _recomputeBaselines(targetDate);
       await _recomputeDerivedMetrics(targetDate);
     }
   }
+
 
   @override
 
@@ -648,10 +650,13 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       userAge: userAge,
     );
 
-    // If historical records have legacy inflated VO2 values (> 64), asynchronously recompute history
-    if (metric?.estimatedVo2Max != null && metric!.estimatedVo2Max! > 64.0) {
+    // If historical records have legacy inflated VO2 values (> 63), asynchronously recompute history
+    final avg7 = await _db.derivedMetricDao.getAverageVo2Max(7);
+    if ((avg7 != null && avg7 > 63.0) ||
+        (metric?.estimatedVo2Max != null && metric!.estimatedVo2Max! > 63.0)) {
       recomputeHistory(days: 30);
     }
+
 
 
     // Persist today's live computed metric to SQLite so historical records are immediately up-to-date
