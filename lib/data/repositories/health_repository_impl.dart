@@ -133,9 +133,10 @@ class HealthRepositoryImpl implements HealthSourceRepository {
         }
       }
 
-      // Recompute baselines and derived metrics
-      await _recomputeBaselines(now);
-      await _recomputeDerivedMetrics(now);
+      // Recompute baselines and derived metrics across the trailing 30-day window
+      // so rolling 7D, 30D, and All-Time averages are clean, accurate, and up-to-date
+      await recomputeHistory(days: 30);
+
 
       // Log success
       await syncDao.logSync(
@@ -373,7 +374,20 @@ class HealthRepositoryImpl implements HealthSourceRepository {
     ));
   }
 
+  /// Recomputes baselines and derived metrics for the last [days] days.
+  /// Fixes historical data so that rolling 7D, 30D, and All-Time averages
+  /// reflect accurate resting heart rate and exercise max HR values.
+  Future<void> recomputeHistory({int days = 30}) async {
+    final now = DateTime.now();
+    for (int i = days; i >= 0; i--) {
+      final targetDate = AppDateUtils.daysAgo(i, from: now);
+      await _recomputeBaselines(targetDate);
+      await _recomputeDerivedMetrics(targetDate);
+    }
+  }
+
   @override
+
   Future<DerivedMetricSummary?> getLatestSummary() async {
     final metric = await _db.derivedMetricDao.getLatestMetric();
     final baseline = await _db.baselineDao.getLatestBaseline();
@@ -616,26 +630,29 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       targetStrain = 6.0 + (rec / 34.0) * 3.9;
     }
 
-    // Recompute VO2max if needed
-    double? vo2max = metric?.estimatedVo2Max;
-    if (vo2max == null) {
-      final maxHr = await _db.healthRecordDao.getMaxExerciseHr(
-        start: AppDateUtils.daysAgo(60, from: now),
-        end: now,
-      );
-      int? userAge;
-      if (maxHr == null) {
-        final dob = await _platform.fetchDateOfBirth();
-        if (dob != null) {
-          userAge = (now.difference(dob).inDays / 365.25).floor();
-        }
+    // Recompute VO2max with live resting HR baseline and exercise max HR
+    final maxHr = await _db.healthRecordDao.getMaxExerciseHr(
+      start: AppDateUtils.daysAgo(60, from: now),
+      end: now,
+    );
+    int? userAge;
+    if (maxHr == null) {
+      final dob = await _platform.fetchDateOfBirth();
+      if (dob != null) {
+        userAge = (now.difference(dob).inDays / 365.25).floor();
       }
-      vo2max = _computeVo2Max(
-        restingHr7dBaseline: rhrBaseline,
-        maxHrFromExercise: maxHr,
-        userAge: userAge,
-      );
     }
+    final vo2max = _computeVo2Max(
+      restingHr7dBaseline: rhrBaseline,
+      maxHrFromExercise: maxHr,
+      userAge: userAge,
+    );
+
+    // If historical records have legacy inflated VO2 values (> 64), asynchronously recompute history
+    if (metric?.estimatedVo2Max != null && metric!.estimatedVo2Max! > 64.0) {
+      recomputeHistory(days: 30);
+    }
+
 
     // Persist today's live computed metric to SQLite so historical records are immediately up-to-date
     await _db.derivedMetricDao.upsertMetric(DerivedMetricsCompanion(

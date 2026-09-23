@@ -39,6 +39,15 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
     _loadVo2Average();
   }
 
+  @override
+  void didUpdateWidget(RecoveryDeepDiveScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.summary?.estimatedVo2Max != widget.summary?.estimatedVo2Max) {
+      _loadVo2Average();
+    }
+  }
+
+
   Future<void> _loadVo2Average() async {
     setState(() => _loadingAverage = true);
     try {
@@ -596,24 +605,25 @@ class _Vo2ExplainerSheet extends StatelessWidget {
           // Data sources
           _explainerRow(
             icon: Icons.favorite_border,
-            title: 'HRrest — Resting Heart Rate',
+            title: 'HRrest — Resting Heart Rate Baseline',
             description:
-                'Rolling 7-day median of your daily minimum resting heart rate, measured by your wearable during sleep or rest.',
+                'Rolling 7-day median of your daily resting heart rate, prioritizing explicit resting heart rate records reported by your wearable.',
           ),
           const SizedBox(height: 12),
           _explainerRow(
             icon: Icons.directions_run,
-            title: 'HRmax — Maximum Heart Rate',
+            title: 'HRmax — Peak Workout Heart Rate',
             description:
-                'Highest heart rate recorded during an exercise session in the last 60 days via Health Connect.',
+                'Highest sustained heart rate recorded during workout sessions (e.g. running) in the last 60 days via Health Connect.',
           ),
           const SizedBox(height: 12),
           _explainerRow(
             icon: Icons.cake_outlined,
             title: 'Age Fallback',
             description:
-                'If no exercise data is available, HRmax is estimated as 220 − age using your date of birth from Health Connect.',
+                'If no workout heart rate data is available, HRmax is estimated as 220 − age using your platform profile.',
           ),
+
           const SizedBox(height: 16),
 
           // Disclaimer
