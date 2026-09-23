@@ -68,7 +68,7 @@ class PulseScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Dynamic RHR delta vs baseline
-    String rhrDeltaText = 'AWAITING SYNC';
+    String rhrDeltaText = 'Awaiting sync';
     Color rhrDeltaColor = RecovaColors.textMuted;
     if (summary?.restingHr != null && summary?.baselineRestingHr != null) {
       final diff = (summary!.restingHr! - summary!.baselineRestingHr!).round();
@@ -79,116 +79,90 @@ class PulseScreen extends StatelessWidget {
         rhrDeltaText = '+$diff bpm basal';
         rhrDeltaColor = RecovaColors.nothingRed;
       } else {
-        rhrDeltaText = 'ON BASELINE';
+        rhrDeltaText = 'On baseline';
         rhrDeltaColor = RecovaColors.textSecondary;
       }
     } else if (summary?.restingHr != null) {
-      rhrDeltaText = 'CURRENT BASAL';
+      rhrDeltaText = 'Current basal';
       rhrDeltaColor = RecovaColors.textSecondary;
     }
 
     // Dynamic SpO2 delta / state
-    String spo2DeltaText = 'AWAITING SYNC';
+    String spo2DeltaText = 'Awaiting sync';
     Color spo2DeltaColor = RecovaColors.textMuted;
     if (summary?.spo2 != null) {
       if (summary!.spo2! >= 95) {
-        spo2DeltaText = 'OPTIMAL RANGE';
+        spo2DeltaText = 'Optimal range';
         spo2DeltaColor = RecovaColors.textSecondary;
       } else {
-        spo2DeltaText = 'ELEVATED DESAT';
+        spo2DeltaText = 'Elevated desat';
         spo2DeltaColor = RecovaColors.nothingRed;
       }
     }
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 100),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // ── Top Athlete Telemetry Status Bar ──
+          // ── Clean Minimalist Top Header ──
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: RecovaColors.surfaceElevation3,
-                      border: Border.all(color: RecovaColors.borderMedium),
+                  Text(
+                    'Today, ${_currentDateFormatted()}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.3,
+                      color: RecovaColors.textPrimary,
                     ),
-                    child: const Icon(Icons.bolt,
-                        color: RecovaColors.monochromeWhite, size: 18),
                   ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 3),
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          const Text(
-                            'TODAY',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
-                              color: RecovaColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            ', ${_currentDateFormatted()}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: RecovaColors.textTertiary,
-                            ),
-                          ),
-                        ],
+                      Container(
+                        width: 5,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: summary != null
+                              ? RecovaColors.monochromeWhite
+                              : RecovaColors.textMuted,
+                        ),
                       ),
-                      Row(
-                        children: [
-                          Container(
-                            width: 5,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: summary != null
-                                  ? RecovaColors.nothingRed
-                                  : RecovaColors.textMuted,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            summary != null
-                                ? 'HEALTH CONNECT • SYNCED'
-                                : 'AWAITING WEARABLE SYNC',
-                            style: TextStyle(
-                              fontSize: 8.5,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                              color: summary != null
-                                  ? RecovaColors.textSecondary
-                                  : RecovaColors.textMuted,
-                            ),
-                          ),
-                        ],
+                      const SizedBox(width: 6),
+                      Text(
+                        summary != null
+                            ? 'Synced with wearable'
+                            : 'Awaiting wearable sync',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0.2,
+                          color: RecovaColors.textTertiary,
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
-              // Sensor Sync Action Button
+              // Clean Sensor Sync Action Button
               BlocBuilder<HealthSyncCubit, HealthSyncState>(
                 builder: (context, state) {
                   return IconButton(
                     onPressed: state is HealthSyncing ? null : onSyncTap,
                     style: IconButton.styleFrom(
                       backgroundColor: RecovaColors.surfaceElevation1,
-                      shape: const CircleBorder(
-                        side: BorderSide(color: RecovaColors.borderSubtle),
+                      padding: const EdgeInsets.all(10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: RecovaColors.borderSubtle),
                       ),
                     ),
                     icon: state is HealthSyncing
@@ -201,7 +175,7 @@ class PulseScreen extends StatelessWidget {
                             ),
                           )
                         : const Icon(
-                            Icons.sensors,
+                            Icons.sensors_outlined,
                             size: 18,
                             color: RecovaColors.monochromeWhite,
                           ),
@@ -210,7 +184,7 @@ class PulseScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
 
           // ── Signature Biometric Recovery Gauge (Clickable to Calculation Page) ──
           RadialScoreGauge(
@@ -218,9 +192,9 @@ class PulseScreen extends StatelessWidget {
             size: 210,
             onTap: () => _openRecoveryCalculation(context),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
 
-          // ── Quick Vital Metrics (100% Real Wearable Sensors & Optical PPG) ──
+          // ── Quick Vital Metrics ──
           Row(
             children: [
               Expanded(
@@ -231,8 +205,8 @@ class PulseScreen extends StatelessWidget {
                       : '--',
                   unit: 'ms',
                   deltaText: summary?.hrvMs != null
-                      ? 'OPTICAL PPG'
-                      : 'AWAITING LOG',
+                      ? 'Within range'
+                      : 'Awaiting log',
                   deltaColor: summary?.hrvMs != null
                       ? RecovaColors.textSecondary
                       : RecovaColors.textMuted,
@@ -296,8 +270,8 @@ class PulseScreen extends StatelessWidget {
   String _currentDateFormatted() {
     final now = DateTime.now();
     const months = [
-      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return '${months[now.month - 1]} ${now.day}';
   }
