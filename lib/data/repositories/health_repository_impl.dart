@@ -175,12 +175,19 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       end: now,
     );
 
-    final dailyMins7d = _computeBaselines.extractDailyMinimums(
-        rhrRecords7d.map((r) => (date: r.startTime, value: r.value)).toList());
-    final dailyMins30d = _computeBaselines.extractDailyMinimums(
-        rhrRecords30d
-            .map((r) => (date: r.startTime, value: r.value))
-            .toList());
+    final isExplicit7d =
+        rhrRecords7d.any((r) => r.recordType == 'RESTING_HEART_RATE');
+    final isExplicit30d =
+        rhrRecords30d.any((r) => r.recordType == 'RESTING_HEART_RATE');
+
+    final dailyRhrs7d = _computeBaselines.extractDailyRestingHrs(
+      rhrRecords7d.map((r) => (date: r.startTime, value: r.value)).toList(),
+      isExplicitRestingHr: isExplicit7d,
+    );
+    final dailyRhrs30d = _computeBaselines.extractDailyRestingHrs(
+      rhrRecords30d.map((r) => (date: r.startTime, value: r.value)).toList(),
+      isExplicitRestingHr: isExplicit30d,
+    );
 
     // ── Sleep baseline (clean nightly extractions to prevent multi-source duplicates) ──
     final sleepRecords = await recordDao.getSleepRecords(
@@ -228,9 +235,9 @@ class HealthRepositoryImpl implements HealthSourceRepository {
     await baselineDao.upsertBaseline(DailyBaselinesCompanion(
       date: Value(today),
       restingHrBaseline7d:
-          Value(_computeBaselines.restingHrBaseline(dailyMins7d)),
+          Value(_computeBaselines.restingHrBaseline(dailyRhrs7d)),
       restingHrBaseline30d:
-          Value(_computeBaselines.restingHrBaseline(dailyMins30d)),
+          Value(_computeBaselines.restingHrBaseline(dailyRhrs30d)),
       sleepDurationBaseline7d:
           Value(_computeBaselines.sleepDurationBaseline(sleepDurations)),
       spo2Baseline7d: Value(_computeBaselines.spo2Baseline(spo2Values)),

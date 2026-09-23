@@ -1,8 +1,10 @@
+import 'dart:math';
 import 'package:drift/drift.dart';
 
 import '../tables/raw_health_records.dart';
 import '../app_database.dart';
 import '../../../core/utils/ppg_hrv_calculator.dart';
+
 
 part 'health_record_dao.g.dart';
 
@@ -62,16 +64,29 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
-  /// Get the daily minimum resting HR for a trailing window.
-  /// Returns list of (date, minValue) pairs.
+  /// Get resting HR records for a trailing window.
+  /// Prioritizes explicit RESTING_HEART_RATE records written by wearable/Health Connect.
+  /// Only falls back to raw HEART_RATE records if no RESTING_HEART_RATE records exist.
   Future<List<RawHealthRecord>> getRestingHrRecords({
     required DateTime start,
     required DateTime end,
   }) async {
+    final rhrRecords = await (select(rawHealthRecords)
+          ..where((r) =>
+              r.recordType.equals('RESTING_HEART_RATE') &
+              r.startTime.isBiggerOrEqualValue(start) &
+              r.endTime.isSmallerOrEqualValue(end))
+          ..orderBy([(r) => OrderingTerm.asc(r.startTime)]))
+        .get();
+
+    if (rhrRecords.isNotEmpty) {
+      return rhrRecords;
+    }
+
+    // Fallback: only if no RESTING_HEART_RATE records exist in the entire window
     return (select(rawHealthRecords)
           ..where((r) =>
-              (r.recordType.equals('RESTING_HEART_RATE') |
-                  r.recordType.equals('HEART_RATE')) &
+              r.recordType.equals('HEART_RATE') &
               r.startTime.isBiggerOrEqualValue(start) &
               r.endTime.isSmallerOrEqualValue(end))
           ..orderBy([(r) => OrderingTerm.asc(r.startTime)]))
@@ -79,19 +94,75 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Get the max HR observed during exercise sessions in a trailing window.
+  ///
+  /// 1. Finds actual WORKOUT sessions within [start, end].
+  /// 2. For each workout, inspects heart rates recorded during that workout window.
+  /// 3. Filters out single-sample optical sensor spikes (> 220 bpm or isolated glitches)
+  ///    by taking the sustained peak HR (98th percentile for >= 5 samples, or max).
+  /// 4. If no workouts exist, looks for sustained aerobic exertion (> 120 bpm, <= 215 bpm).
+  /// 5. Returns null if no exercise data is available (allowing age fallback).
   Future<double?> getMaxExerciseHr({
     required DateTime start,
     required DateTime end,
   }) async {
-    final records = await (select(rawHealthRecords)
+    // 1. Fetch workout sessions in window
+    final workouts = await (select(rawHealthRecords)
+          ..where((r) =>
+              r.recordType.equals('WORKOUT') &
+              r.startTime.isBiggerOrEqualValue(start) &
+              r.endTime.isSmallerOrEqualValue(end)))
+        .get();
+
+    if (workouts.isNotEmpty) {
+      final List<double> workoutPeakHrs = [];
+      for (final w in workouts) {
+        final hrs = await (select(rawHealthRecords)
+              ..where((r) =>
+                  r.recordType.equals('HEART_RATE') &
+                  r.startTime.isBiggerOrEqualValue(w.startTime) &
+                  r.endTime.isSmallerOrEqualValue(w.endTime) &
+                  r.value.isSmallerOrEqualValue(220.0) &
+                  r.value.isBiggerValue(60.0))
+              ..orderBy([(r) => OrderingTerm.asc(r.value)]))
+            .get();
+
+        if (hrs.isNotEmpty) {
+          if (hrs.length >= 5) {
+            // Sustained peak (98th percentile to eliminate 1-sample optical spikes)
+            final p98Index =
+                ((hrs.length - 1) * 0.98).floor().clamp(0, hrs.length - 1);
+            workoutPeakHrs.add(hrs[p98Index].value);
+          } else {
+            workoutPeakHrs.add(hrs.last.value);
+          }
+        }
+      }
+
+      if (workoutPeakHrs.isNotEmpty) {
+        workoutPeakHrs.sort((a, b) => b.compareTo(a));
+        return workoutPeakHrs.first;
+      }
+    }
+
+    // 2. Fallback: if no WORKOUT records logged, look for sustained aerobic heart rates
+    final aerobicHrs = await (select(rawHealthRecords)
           ..where((r) =>
               r.recordType.equals('HEART_RATE') &
               r.startTime.isBiggerOrEqualValue(start) &
-              r.endTime.isSmallerOrEqualValue(end))
-          ..orderBy([(r) => OrderingTerm.desc(r.value)])
-          ..limit(1))
+              r.endTime.isSmallerOrEqualValue(end) &
+              r.value.isBiggerValue(120.0) &
+              r.value.isSmallerOrEqualValue(215.0))
+          ..orderBy([(r) => OrderingTerm.desc(r.value)]))
         .get();
-    return records.isEmpty ? null : records.first.value;
+
+    if (aerobicHrs.length >= 3) {
+      // Avoid isolated single-sample spike
+      return aerobicHrs[1].value;
+    } else if (aerobicHrs.isNotEmpty) {
+      return aerobicHrs.first.value;
+    }
+
+    return null;
   }
 
   /// Get sleep session records for baseline computation.
