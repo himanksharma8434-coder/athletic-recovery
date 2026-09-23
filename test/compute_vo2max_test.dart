@@ -80,5 +80,19 @@ void main() {
       expect(result, isNotNull);
       expect(result!, closeTo(58.97, 0.1));
     });
+
+    test('returns null for impossible values outside 15-85 range', () {
+      // Extremely low ratio
+      expect(
+        computeVo2Max(restingHr7dBaseline: 150, maxHrFromExercise: 155),
+        isNull,
+      );
+      // Impossibly high ratio
+      expect(
+        computeVo2Max(restingHr7dBaseline: 30, maxHrFromExercise: 220),
+        isNull,
+      );
+    });
   });
 }
+

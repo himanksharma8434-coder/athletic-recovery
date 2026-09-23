@@ -49,5 +49,31 @@ void main() {
       final dailyMins = computeBaselines.extractDailyMinimums(records);
       expect(dailyMins, [48.0, 51.0]);
     });
+
+    test('extractDailyRestingHrs uses median for explicit resting HR records', () {
+      final day1 = DateTime(2026, 10, 24, 8, 30);
+      final day1Mid = DateTime(2026, 10, 24, 12, 0);
+      final day1Later = DateTime(2026, 10, 24, 18, 0);
+
+      final records = [
+        (date: day1, value: 54.0),
+        (date: day1Mid, value: 58.0),
+        (date: day1Later, value: 56.0),
+      ];
+
+      final dailyRhrs = computeBaselines.extractDailyRestingHrs(records, isExplicitRestingHr: true);
+      expect(dailyRhrs, [56.0]); // median of [54, 56, 58] is 56.0
+    });
+
+    test('extractDailyRestingHrs uses 10th percentile for fallback raw HR', () {
+      final day1 = DateTime(2026, 10, 24, 8, 30);
+      // 10 samples: [40 (glitch), 52, 54, 55, 60, 65, 70, 75, 80, 85]
+      final values = [40.0, 52.0, 54.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0];
+      final records = values.map((v) => (date: day1, value: v)).toList();
+
+      final dailyRhrs = computeBaselines.extractDailyRestingHrs(records, isExplicitRestingHr: false);
+      expect(dailyRhrs, [52.0]); // 10th percentile rejects the 40.0 glitch
+    });
   });
 }
+
