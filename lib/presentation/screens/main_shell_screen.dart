@@ -27,6 +27,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
   void initState() {
     super.initState();
     context.read<DashboardCubit>().load();
+    // Auto-sync on startup: pull latest wearable data immediately
+    _autoSync();
+  }
+
+  Future<void> _autoSync() async {
+    // Short delay to let the UI render first
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    await context.read<HealthSyncCubit>().syncNow();
+    if (mounted) {
+      context.read<DashboardCubit>().refresh();
+    }
   }
 
   void _onSyncTap() async {
