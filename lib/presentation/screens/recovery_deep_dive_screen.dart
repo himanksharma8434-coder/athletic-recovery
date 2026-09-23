@@ -83,6 +83,9 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
     final tier = RecoveryTier.fromScore(score);
     final vo2 = widget.summary?.estimatedVo2Max;
 
+    // Determine the displayed VO2 value: use the period average
+    final displayVo2 = _loadingAverage ? null : (_averageVo2 ?? vo2);
+
     // Convert real 14-day database history to chart spots
     final history = widget.summary?.recoveryHistory14d ?? [];
     final List<FlSpot> spots = [];
@@ -96,6 +99,18 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
       spots.sort((a, b) => a.x.compareTo(b.x));
     } else if (score != null) {
       spots.add(FlSpot(14, score));
+    }
+
+    // Fitness tier label from VO2
+    String vo2TierLabel = 'FAIR';
+    if (displayVo2 != null) {
+      if (displayVo2 >= 50) {
+        vo2TierLabel = 'SUPERIOR';
+      } else if (displayVo2 >= 42) {
+        vo2TierLabel = 'EXCELLENT';
+      } else if (displayVo2 >= 35) {
+        vo2TierLabel = 'GOOD';
+      }
     }
 
     return SingleChildScrollView(
@@ -118,7 +133,8 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: tier.containerColor,
                   borderRadius: BorderRadius.circular(14),
@@ -138,7 +154,7 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
           ),
           const SizedBox(height: 16),
 
-          // ── Estimated VO₂ Max Card ──
+          // ── Single Unified VO₂ Max Card ──
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -149,7 +165,7 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title row
+                // Title + How It Works button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -159,12 +175,12 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
                             size: 16, color: RecovaColors.recoveryEmerald),
                         SizedBox(width: 6),
                         Text(
-                          'ESTIMATED VO₂ MAX',
+                          'VO₂ MAX',
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.2,
-                            color: RecovaColors.textTertiary,
+                            color: RecovaColors.textPrimary,
                           ),
                         ),
                       ],
@@ -173,17 +189,19 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
                       onTap: _showVo2Explainer,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2.5),
+                            horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: RecovaColors.surfaceElevation3,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: RecovaColors.borderSubtle),
+                          border:
+                              Border.all(color: RecovaColors.borderSubtle),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: const [
                             Icon(Icons.info_outline,
-                                size: 11, color: RecovaColors.textTertiary),
+                                size: 11,
+                                color: RecovaColors.textTertiary),
                             SizedBox(width: 4),
                             Text(
                               'HOW IT WORKS',
@@ -200,23 +218,76 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
 
-                // Current VO2 value
+                // Period selector pills
+                Row(
+                  children: Vo2Period.values.map((p) {
+                    final isSelected = p == _selectedPeriod;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: GestureDetector(
+                        onTap: () => _onPeriodChanged(p),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? RecovaColors.monochromeWhite
+                                : RecovaColors.surfaceElevation3,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSelected
+                                  ? RecovaColors.monochromeWhite
+                                  : RecovaColors.borderSubtle,
+                            ),
+                          ),
+                          child: Text(
+                            p.label,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
+                              color: isSelected
+                                  ? RecovaColors.canvasBase
+                                  : RecovaColors.textMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 18),
+
+                // VO2 value display
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(
-                      vo2 != null ? vo2.toStringAsFixed(1) : '--',
-                      style: const TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: -1.0,
-                        color: RecovaColors.textPrimary,
+                    if (_loadingAverage)
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: RecovaColors.monochromeWhite,
+                        ),
+                      )
+                    else
+                      Text(
+                        displayVo2 != null
+                            ? displayVo2.toStringAsFixed(1)
+                            : '--',
+                        style: const TextStyle(
+                          fontSize: 40,
+                          fontWeight: FontWeight.w300,
+                          letterSpacing: -1.0,
+                          color: RecovaColors.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     const Text(
                       'mL/kg/min',
                       style: TextStyle(
@@ -226,7 +297,7 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
                       ),
                     ),
                     const Spacer(),
-                    if (vo2 != null)
+                    if (displayVo2 != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
@@ -237,13 +308,7 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
                               color: RecovaColors.recoveryEmeraldBorder),
                         ),
                         child: Text(
-                          vo2 >= 50
-                              ? 'SUPERIOR'
-                              : vo2 >= 42
-                                  ? 'EXCELLENT'
-                                  : vo2 >= 35
-                                      ? 'GOOD'
-                                      : 'FAIR',
+                          vo2TierLabel,
                           style: const TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
@@ -254,119 +319,13 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
                       ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // ── VO₂ Average Period Selector ──
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: RecovaColors.surfaceElevation1,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: RecovaColors.borderSubtle),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'AVERAGE VO₂ MAX',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                        color: RecovaColors.textTertiary,
-                      ),
-                    ),
-                    // Period pills
-                    Row(
-                      children: Vo2Period.values.map((p) {
-                        final isSelected = p == _selectedPeriod;
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 4),
-                          child: GestureDetector(
-                            onTap: () => _onPeriodChanged(p),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? RecovaColors.monochromeWhite
-                                    : RecovaColors.surfaceElevation3,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? RecovaColors.monochromeWhite
-                                      : RecovaColors.borderSubtle,
-                                ),
-                              ),
-                              child: Text(
-                                p.label,
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.6,
-                                  color: isSelected
-                                      ? RecovaColors.canvasBase
-                                      : RecovaColors.textMuted,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-
-                // Average value display
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    if (_loadingAverage)
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: RecovaColors.monochromeWhite,
-                        ),
-                      )
-                    else
-                      Text(
-                        _averageVo2 != null
-                            ? _averageVo2!.toStringAsFixed(1)
-                            : '--',
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w300,
-                          letterSpacing: -0.5,
-                          color: RecovaColors.textPrimary,
-                        ),
-                      ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'mL/kg/min avg',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: RecovaColors.textTertiary.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ],
-                ),
                 const SizedBox(height: 8),
+
+                // Period description
                 Text(
                   _selectedPeriod == Vo2Period.allTime
-                      ? 'Averaged across all recorded data'
-                      : 'Averaged over the last ${_selectedPeriod.days} days',
+                      ? 'Average across all recorded data'
+                      : 'Average over the last ${_selectedPeriod.days} days',
                   style: const TextStyle(
                     fontSize: 10.5,
                     color: RecovaColors.textMuted,
