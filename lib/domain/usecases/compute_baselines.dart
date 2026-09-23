@@ -60,4 +60,44 @@ class ComputeBaselines {
     }
     return byDay.values.map((vals) => vals.reduce(min)).toList();
   }
+
+  /// Group records by date and extract daily resting HR values.
+  ///
+  /// - If [isExplicitRestingHr] is true (records are from RESTING_HEART_RATE):
+  ///   uses the daily median value, reflecting the true daily resting state.
+  /// - If false (fallback to raw HEART_RATE):
+  ///   uses the 10th percentile of the day's readings to reject nocturnal sensor dropouts / motion artifacts.
+  List<double> extractDailyRestingHrs(
+    List<({DateTime date, double value})> records, {
+    bool isExplicitRestingHr = true,
+  }) {
+    if (records.isEmpty) return [];
+    final byDay = <String, List<double>>{};
+    for (final r in records) {
+      final key =
+          '${r.date.year}-${r.date.month.toString().padLeft(2, '0')}-${r.date.day.toString().padLeft(2, '0')}';
+      byDay.putIfAbsent(key, () => []).add(r.value);
+    }
+
+    final List<double> result = [];
+    for (final vals in byDay.values) {
+      if (vals.isEmpty) continue;
+      final sorted = List<double>.from(vals)..sort();
+      if (isExplicitRestingHr) {
+        // True resting HR reported by wearable: use median of the day
+        final mid = sorted.length ~/ 2;
+        final dailyVal = sorted.length.isOdd
+            ? sorted[mid]
+            : (sorted[mid - 1] + sorted[mid]) / 2;
+        result.add(dailyVal);
+      } else {
+        // Raw heart rate: use 10th percentile to avoid single-sample sensor nadirs/glitches
+        final p10Index =
+            (sorted.length * 0.10).floor().clamp(0, sorted.length - 1);
+        result.add(sorted[p10Index]);
+      }
+    }
+    return result;
+  }
 }
+
