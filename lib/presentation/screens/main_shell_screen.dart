@@ -31,15 +31,16 @@ class _MainShellScreenState extends State<MainShellScreen> {
     _autoSync();
   }
 
-  Future<void> _autoSync() async {
-    // Short delay to let the UI render first
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
-    await context.read<HealthSyncCubit>().syncNow();
-    if (mounted) {
-      context.read<DashboardCubit>().refresh();
-    }
+  void _autoSync() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await context.read<HealthSyncCubit>().syncNow();
+      if (mounted) {
+        context.read<DashboardCubit>().refresh();
+      }
+    });
   }
+
 
   void _onSyncTap() async {
     await context.read<HealthSyncCubit>().syncNow();
