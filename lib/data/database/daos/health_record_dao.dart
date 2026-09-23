@@ -105,16 +105,17 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
     required DateTime start,
     required DateTime end,
   }) async {
-    // 1. Fetch workout sessions in window
+    // 1. Fetch workout sessions in window, ordered by most recent first
     final workouts = await (select(rawHealthRecords)
           ..where((r) =>
               r.recordType.equals('WORKOUT') &
               r.startTime.isBiggerOrEqualValue(start) &
-              r.endTime.isSmallerOrEqualValue(end)))
+              r.endTime.isSmallerOrEqualValue(end))
+          ..orderBy([(r) => OrderingTerm.desc(r.startTime)]))
         .get();
 
     if (workouts.isNotEmpty) {
-      final List<double> workoutPeakHrs = [];
+      final List<({DateTime date, String type, double peakHr, double maxHr})> workoutPeaks = [];
       for (final w in workouts) {
         final hrs = await (select(rawHealthRecords)
               ..where((r) =>
@@ -127,20 +128,48 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
             .get();
 
         if (hrs.isNotEmpty) {
+          final maxVal = hrs.last.value;
+          double peakVal = maxVal;
           if (hrs.length >= 5) {
             // Sustained peak (98th percentile to eliminate 1-sample optical spikes)
             final p98Index =
                 ((hrs.length - 1) * 0.98).floor().clamp(0, hrs.length - 1);
-            workoutPeakHrs.add(hrs[p98Index].value);
-          } else {
-            workoutPeakHrs.add(hrs.last.value);
+            peakVal = hrs[p98Index].value;
           }
+          final effectivePeak = (maxVal - peakVal <= 8) ? maxVal : peakVal;
+          workoutPeaks.add((
+            date: w.startTime,
+            type: w.unit.toUpperCase(),
+            peakHr: effectivePeak,
+            maxHr: maxVal,
+          ));
         }
       }
 
-      if (workoutPeakHrs.isNotEmpty) {
-        workoutPeakHrs.sort((a, b) => b.compareTo(a));
-        return workoutPeakHrs.first;
+      if (workoutPeaks.isNotEmpty) {
+        // Prioritize recent cardio / running workouts within the trailing 14 days
+        final recentCutoff = end.subtract(const Duration(days: 14));
+        final recentCardio = workoutPeaks.where((w) =>
+            (w.type.contains('RUN') ||
+             w.type.contains('CARDIO') ||
+             w.type.contains('CYCLE') ||
+             w.type.contains('AEROBIC')) &&
+            w.date.isAfter(recentCutoff)).toList();
+
+        if (recentCardio.isNotEmpty) {
+          return recentCardio.first.peakHr;
+        }
+
+        // Next preference: any workout in trailing 14 days
+        final recentWorkouts =
+            workoutPeaks.where((w) => w.date.isAfter(recentCutoff)).toList();
+        if (recentWorkouts.isNotEmpty) {
+          return recentWorkouts.first.peakHr;
+        }
+
+        // Fallback: highest sustained peak across the window
+        workoutPeaks.sort((a, b) => b.peakHr.compareTo(a.peakHr));
+        return workoutPeaks.first.peakHr;
       }
     }
 
