@@ -4,7 +4,7 @@ import 'package:drift/drift.dart';
 import '../tables/raw_health_records.dart';
 import '../app_database.dart';
 import '../../../core/utils/ppg_hrv_calculator.dart';
-
+import '../../../domain/entities/daily_metric_point.dart';
 
 part 'health_record_dao.g.dart';
 
@@ -564,4 +564,105 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
           ..orderBy([(r) => OrderingTerm.asc(r.startTime)]))
         .get();
   }
+
+  /// Returns daily max heart rates (highest sustained HR per day)
+  /// for the last [days] days, or all time if [days] is null or 0.
+  Future<List<DailyMetricPoint>> getDailyMaxHeartRates([int? days]) async {
+    String query = '''
+      SELECT 
+        date(datetime(start_time, 'unixepoch', 'localtime')) as day_str,
+        MAX(value) as max_val
+      FROM raw_health_records
+      WHERE record_type = 'HEART_RATE'
+        AND value >= 60.0 AND value <= 220.0
+    ''';
+    final variables = <Variable>[];
+    if (days != null && days > 0) {
+      final cutoff = DateTime.now().subtract(Duration(days: days));
+      final cutoffSec = cutoff.millisecondsSinceEpoch ~/ 1000;
+      query += ' AND start_time >= ? ';
+      variables.add(Variable<int>(cutoffSec));
+    }
+    query += ' GROUP BY day_str ORDER BY day_str ASC ';
+
+    final rows = await customSelect(
+      query,
+      variables: variables,
+      readsFrom: {rawHealthRecords},
+    ).get();
+
+    return rows.map((r) {
+      final dayStr = r.read<String>('day_str');
+      final val = r.read<double>('max_val');
+      final date = DateTime.tryParse(dayStr) ?? DateTime.now();
+      return DailyMetricPoint(date: date, value: val);
+    }).toList();
+  }
+
+  /// Returns daily resting heart rates for the last [days] days,
+  /// or all time if [days] is null or 0.
+  Future<List<DailyMetricPoint>> getDailyRestingHeartRates([int? days]) async {
+    String query = '''
+      SELECT 
+        date(datetime(start_time, 'unixepoch', 'localtime')) as day_str,
+        ROUND(AVG(value), 1) as avg_val
+      FROM raw_health_records
+      WHERE record_type = 'RESTING_HEART_RATE'
+    ''';
+    final variables = <Variable>[];
+    if (days != null && days > 0) {
+      final cutoff = DateTime.now().subtract(Duration(days: days));
+      final cutoffSec = cutoff.millisecondsSinceEpoch ~/ 1000;
+      query += ' AND start_time >= ? ';
+      variables.add(Variable<int>(cutoffSec));
+    }
+    query += ' GROUP BY day_str ORDER BY day_str ASC ';
+
+    final rows = await customSelect(
+      query,
+      variables: variables,
+      readsFrom: {rawHealthRecords},
+    ).get();
+
+    if (rows.isNotEmpty) {
+      return rows.map((r) {
+        final dayStr = r.read<String>('day_str');
+        final val = r.read<double>('avg_val');
+        final date = DateTime.tryParse(dayStr) ?? DateTime.now();
+        return DailyMetricPoint(date: date, value: val);
+      }).toList();
+    }
+
+    // Fallback if no explicit RESTING_HEART_RATE: use minimum HEART_RATE in resting range
+    String fallbackQuery = '''
+      SELECT 
+        date(datetime(start_time, 'unixepoch', 'localtime')) as day_str,
+        MIN(value) as min_val
+      FROM raw_health_records
+      WHERE record_type = 'HEART_RATE'
+        AND value >= 40.0 AND value <= 120.0
+    ''';
+    final fbVariables = <Variable>[];
+    if (days != null && days > 0) {
+      final cutoff = DateTime.now().subtract(Duration(days: days));
+      final cutoffSec = cutoff.millisecondsSinceEpoch ~/ 1000;
+      fallbackQuery += ' AND start_time >= ? ';
+      fbVariables.add(Variable<int>(cutoffSec));
+    }
+    fallbackQuery += ' GROUP BY day_str ORDER BY day_str ASC ';
+
+    final fbRows = await customSelect(
+      fallbackQuery,
+      variables: fbVariables,
+      readsFrom: {rawHealthRecords},
+    ).get();
+
+    return fbRows.map((r) {
+      final dayStr = r.read<String>('day_str');
+      final val = r.read<double>('min_val');
+      final date = DateTime.tryParse(dayStr) ?? DateTime.now();
+      return DailyMetricPoint(date: date, value: val);
+    }).toList();
+  }
 }
+

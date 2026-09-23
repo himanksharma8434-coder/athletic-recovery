@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../tables/derived_metrics.dart';
 import '../app_database.dart';
+import '../../../domain/entities/daily_metric_point.dart';
 
 part 'derived_metric_dao.g.dart';
 
@@ -75,4 +76,23 @@ class DerivedMetricDao extends DatabaseAccessor<AppDatabase>
     final sum = rows.fold<double>(0.0, (s, r) => s + (r.estimatedVo2Max ?? 0));
     return sum / rows.length;
   }
+
+  /// Get historical VO2 max data points for the given [days] (or all-time if days == null or 0).
+  Future<List<DailyMetricPoint>> getDailyVo2MaxHistory([int? days]) async {
+    final query = select(derivedMetrics)
+      ..where((m) => m.estimatedVo2Max.isNotNull());
+    if (days != null && days > 0) {
+      final cutoff = DateTime.now().subtract(Duration(days: days));
+      query.where((m) => m.date.isBiggerOrEqualValue(cutoff));
+    }
+    query.orderBy([(m) => OrderingTerm.asc(m.date)]);
+    final rows = await query.get();
+    return rows
+        .map((r) => DailyMetricPoint(
+              date: r.date,
+              value: r.estimatedVo2Max!,
+            ))
+        .toList();
+  }
 }
+

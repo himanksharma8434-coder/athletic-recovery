@@ -11,6 +11,7 @@ import 'package:whoop/presentation/screens/resting_hr_detail_screen.dart';
 import 'package:whoop/presentation/screens/blood_o2_detail_screen.dart';
 import 'package:whoop/presentation/screens/sleep_architecture_detail_screen.dart';
 import 'package:whoop/presentation/screens/hrv_detail_screen.dart';
+import 'package:whoop/presentation/screens/recovery_deep_dive_screen.dart';
 import 'package:whoop/presentation/screens/sleep_screen.dart';
 import 'package:whoop/presentation/screens/strain_screen.dart';
 import 'package:whoop/presentation/components/daily_activity_pod.dart';
@@ -703,6 +704,99 @@ void main() {
     expect(find.text('7,850'), findsOneWidget);
     expect(find.text('DAY TOTAL (00:00 - NOW)'), findsOneWidget);
   });
+
+  testWidgets(
+      'RecoveryDeepDiveScreen renders without overflow on compact 360x640 screen',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    final summary = const DerivedMetricSummary(
+      estimatedVo2Max: 55.5,
+      restingHr: 54.0,
+      baselineRestingHr: 50.4,
+      recoveryScore: 82.0,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: RecoveryDeepDiveScreen(summary: summary),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('RECOVERY ANALYSIS'), findsOneWidget);
+    expect(find.text('VO₂ MAX'), findsWidgets);
+    expect(find.text('MAX HR'), findsOneWidget);
+    expect(find.text('RESTING HR'), findsOneWidget);
+    expect(find.text('CALCULATION BREAKDOWN'), findsOneWidget);
+  });
+
+  testWidgets(
+      'RecoveryDeepDiveScreen allows switching between VO2 MAX, MAX HR, and RESTING HR',
+      (tester) async {
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    final summary = const DerivedMetricSummary(
+      estimatedVo2Max: 55.5,
+      restingHr: 54.0,
+      baselineRestingHr: 50.4,
+      recoveryScore: 82.0,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: RecoveryDeepDiveScreen(summary: summary),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Initial state: VO2 MAX selected with visible calculation breakdown
+    expect(find.text('CALCULATION BREAKDOWN'), findsOneWidget);
+    expect(find.text('UTH–SØRENSEN'), findsOneWidget);
+
+    // Switch to MAX HR
+    await tester.tap(find.text('MAX HR'));
+    await tester.pumpAndSettle();
+    expect(find.text('MAXIMUM HEART RATE'), findsOneWidget);
+    expect(find.text('MAX HEART RATE TELEMETRY'), findsOneWidget);
+
+    // Switch to RESTING HR
+    await tester.tap(find.text('RESTING HR'));
+    await tester.pumpAndSettle();
+    expect(find.text('RESTING HEART RATE'), findsOneWidget);
+    expect(find.text('RESTING HEART RATE TELEMETRY'), findsOneWidget);
+
+    // Switch periods: 30D, ALL, 7D
+    await tester.tap(find.text('30D'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('ALL'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('7D'));
+    await tester.pumpAndSettle();
+
+    // Switch back to VO2 MAX and open HOW IT WORKS
+    await tester.tap(find.text('VO₂ MAX').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('HOW IT WORKS'));
+    await tester.pumpAndSettle();
+
+    // Verify modal sheet opened
+    expect(find.text('HOW VO₂ MAX IS CALCULATED'), findsOneWidget);
+    expect(find.text('VO₂max ≈ 15.3 × (HRmax ÷ HRrest)'), findsOneWidget);
+  });
 }
+
 
 
