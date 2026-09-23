@@ -122,7 +122,7 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
                   r.startTime.isBiggerOrEqualValue(w.startTime) &
                   r.endTime.isSmallerOrEqualValue(w.endTime) &
                   r.value.isSmallerOrEqualValue(220.0) &
-                  r.value.isBiggerValue(60.0))
+                  r.value.isBiggerOrEqualValue(60.0))
               ..orderBy([(r) => OrderingTerm.asc(r.value)]))
             .get();
 
@@ -150,10 +150,11 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
               r.recordType.equals('HEART_RATE') &
               r.startTime.isBiggerOrEqualValue(start) &
               r.endTime.isSmallerOrEqualValue(end) &
-              r.value.isBiggerValue(120.0) &
+              r.value.isBiggerOrEqualValue(120.0) &
               r.value.isSmallerOrEqualValue(215.0))
           ..orderBy([(r) => OrderingTerm.desc(r.value)]))
         .get();
+
 
     if (aerobicHrs.length >= 3) {
       // Avoid isolated single-sample spike

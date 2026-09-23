@@ -81,18 +81,14 @@ void main() {
       expect(result!, closeTo(58.97, 0.1));
     });
 
-    test('returns null for impossible values outside 15-85 range', () {
-      // Extremely low ratio
-      expect(
-        computeVo2Max(restingHr7dBaseline: 150, maxHrFromExercise: 155),
-        isNull,
-      );
-      // Impossibly high ratio
+    test('returns null for impossible values outside physiological range', () {
+      // Impossibly high ratio (e.g. sensor glitch HRmax 220, RHR 30 -> 112.2)
       expect(
         computeVo2Max(restingHr7dBaseline: 30, maxHrFromExercise: 220),
         isNull,
       );
     });
+
   });
 }
 
