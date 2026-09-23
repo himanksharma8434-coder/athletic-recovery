@@ -51,4 +51,28 @@ class DerivedMetricDao extends DatabaseAccessor<AppDatabase>
           ..orderBy([(m) => OrderingTerm.asc(m.date)]))
         .get();
   }
+
+  /// Get the average estimated VO2 max over the last [days] days.
+  /// Returns null if no records with a non-null VO2 max exist in the window.
+  Future<double?> getAverageVo2Max(int days) async {
+    final cutoff = DateTime.now().subtract(Duration(days: days));
+    final rows = await (select(derivedMetrics)
+          ..where((m) => m.date.isBiggerOrEqualValue(cutoff))
+          ..where((m) => m.estimatedVo2Max.isNotNull()))
+        .get();
+    if (rows.isEmpty) return null;
+    final sum = rows.fold<double>(0.0, (s, r) => s + (r.estimatedVo2Max ?? 0));
+    return sum / rows.length;
+  }
+
+  /// Get the all-time average estimated VO2 max.
+  /// Returns null if no records with a non-null VO2 max exist.
+  Future<double?> getAllTimeAverageVo2Max() async {
+    final rows = await (select(derivedMetrics)
+          ..where((m) => m.estimatedVo2Max.isNotNull()))
+        .get();
+    if (rows.isEmpty) return null;
+    final sum = rows.fold<double>(0.0, (s, r) => s + (r.estimatedVo2Max ?? 0));
+    return sum / rows.length;
+  }
 }
