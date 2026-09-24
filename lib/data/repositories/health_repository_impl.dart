@@ -640,27 +640,49 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       targetStrain = 6.0 + (rec / 34.0) * 3.9;
     }
 
-    // Recompute VO2max with live resting HR baseline and exercise max HR
-    final maxHr = await _db.healthRecordDao.getMaxExerciseHr(
+    // Recompute VO2max with live window-specific resting HR baselines and exercise max HR
+    final maxHr7d = await _db.healthRecordDao.getMaxExerciseHr(
+      start: AppDateUtils.daysAgo(7, from: now),
+      end: now,
+    );
+    final maxHr30d = await _db.healthRecordDao.getMaxExerciseHr(
+      start: AppDateUtils.daysAgo(30, from: now),
+      end: now,
+    );
+    final maxHr60d = await _db.healthRecordDao.getMaxExerciseHr(
       start: AppDateUtils.daysAgo(60, from: now),
       end: now,
     );
     int? userAge;
-    if (maxHr == null) {
+    if (maxHr60d == null) {
       final dob = await _platform.fetchDateOfBirth();
       if (dob != null) {
         userAge = (now.difference(dob).inDays / 365.25).floor();
       }
     }
-    double vo2Rhr = rhrBaseline;
-    if (vo2Rhr < 56.0) {
-      vo2Rhr = (vo2Rhr * 1.228).clamp(58.0, 68.0);
+    final rhr7d = baseline?.restingHrBaseline7d ?? 60.0;
+    final rhr30d = baseline?.restingHrBaseline30d ?? rhr7d;
+
+    double vo2Rhr7d = rhr7d;
+    if (vo2Rhr7d < 56.0) {
+      vo2Rhr7d = (vo2Rhr7d * 1.228).clamp(58.0, 68.0);
     }
-    final vo2max = _computeVo2Max(
-      restingHr7dBaseline: vo2Rhr,
-      maxHrFromExercise: maxHr,
+    double vo2Rhr30d = rhr30d;
+    if (vo2Rhr30d < 56.0) {
+      vo2Rhr30d = (vo2Rhr30d * 1.228).clamp(58.0, 68.0);
+    }
+
+    final vo2max7d = _computeVo2Max(
+      restingHr7dBaseline: vo2Rhr7d,
+      maxHrFromExercise: maxHr7d ?? maxHr30d ?? maxHr60d,
       userAge: userAge,
     );
+    final vo2max30d = _computeVo2Max(
+      restingHr7dBaseline: vo2Rhr30d,
+      maxHrFromExercise: maxHr30d ?? maxHr60d,
+      userAge: userAge,
+    );
+    final vo2max = vo2max7d;
 
     // If historical records have legacy inflated VO2 values (> 48.0), asynchronously recompute history
     final avg7 = await _db.derivedMetricDao.getAverageVo2Max(7);
@@ -668,8 +690,6 @@ class HealthRepositoryImpl implements HealthSourceRepository {
         (metric?.estimatedVo2Max != null && metric!.estimatedVo2Max! > 48.0)) {
       recomputeHistory(days: 30);
     }
-
-
 
     // Persist today's live computed metric to SQLite so historical records are immediately up-to-date
     await _db.derivedMetricDao.upsertMetric(DerivedMetricsCompanion(
@@ -691,6 +711,8 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       recoveryComponentRespiratory: liveRecovery.respiratoryComponent,
       primaryFactor: liveRecovery.primaryFactor,
       estimatedVo2Max: vo2max,
+      estimatedVo2Max7d: vo2max7d,
+      estimatedVo2Max30d: vo2max30d,
       restingHr: todayRhr ?? baseline?.restingHrBaseline7d,
       baselineRestingHr: rhrBaseline,
       sleepHours: actualSleepHours ??

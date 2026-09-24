@@ -132,6 +132,8 @@ class DerivedMetricSummary {
   final double? recoveryComponentRespiratory;
   final String? primaryFactor;
   final double? estimatedVo2Max;
+  final double? estimatedVo2Max7d;
+  final double? estimatedVo2Max30d;
   final double? restingHr;
   final double? baselineRestingHr;
   final double? sleepHours;
@@ -165,6 +167,8 @@ class DerivedMetricSummary {
     this.recoveryComponentRespiratory,
     this.primaryFactor,
     this.estimatedVo2Max,
+    this.estimatedVo2Max7d,
+    this.estimatedVo2Max30d,
     this.restingHr,
     this.baselineRestingHr,
     this.sleepHours,
