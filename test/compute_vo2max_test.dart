@@ -81,6 +81,16 @@ void main() {
       expect(result!, closeTo(58.97, 0.1));
     });
 
+    test('computes user verified VO2max accurately (HRmax=183, HRrest=60.2 -> 46.51)', () {
+      final result = computeVo2Max(
+        restingHr7dBaseline: 60.2,
+        maxHrFromExercise: 183.0,
+      );
+      expect(result, isNotNull);
+      expect(result!, closeTo(46.51, 0.01));
+      expect(result.toStringAsFixed(1), '46.5');
+    });
+
     test('returns null for impossible values outside physiological range', () {
       // Impossibly high ratio (e.g. sensor glitch HRmax 220, RHR 30 -> 112.2)
       expect(

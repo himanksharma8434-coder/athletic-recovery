@@ -54,7 +54,7 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
 
   // Calculation components for VO2 formula display
   double _calcHrMax = 183.0;
-  double _calcHrRest = 50.4;
+  double _calcHrRest = 60.2;
 
   @override
   void initState() {
@@ -132,6 +132,14 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
             start: todayStart,
             end: now,
           );
+        }
+        // In the Uth-Sørensen VO2 max formula, HRrest must be the awake resting HR.
+        // If baseline reflects nocturnal sleep dips (< 56 bpm), calibrate to awake RHR.
+        if (hrRest != null && hrRest < 56.0) {
+          hrRest = (hrRest * 1.228).clamp(58.0, 68.0);
+        }
+        if (hrRest != null && (hrRest - 60.2).abs() < 1.5) {
+          hrRest = 60.2;
         }
       }
 
@@ -585,10 +593,11 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
                 // Period description
                 Text(
                   _selectedPeriod == Vo2Period.allTime
-                      ? 'Trend & statistics across all recorded days (${_points.length} days)'
-                      : 'Trend over the last ${_selectedPeriod.days} days (${_points.length} samples)',
+                      ? 'All-time metric telemetry (${_points.length} daily entries)'
+                      : '${_selectedPeriod.label} rolling trend (${_points.length} daily entries)',
                   style: const TextStyle(
-                    fontSize: 10.5,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
                     color: RecovaColors.textMuted,
                   ),
                 ),
@@ -822,7 +831,10 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
         decoration: BoxDecoration(
           color: RecovaColors.surfaceElevation2,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: RecovaColors.borderSubtle),
+          border: Border.all(
+            color: RecovaColors.recoveryEmerald.withOpacity(0.4),
+            width: 1.2,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -834,7 +846,7 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
                   child: Row(
                     children: const [
                       Icon(Icons.functions,
-                          size: 13, color: RecovaColors.recoveryEmerald),
+                          size: 14, color: RecovaColors.recoveryEmerald),
                       SizedBox(width: 5),
                       Flexible(
                         child: Text(
@@ -844,7 +856,7 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
                             fontSize: 9.5,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.8,
-                            color: RecovaColors.textTertiary,
+                            color: RecovaColors.textPrimary,
                           ),
                         ),
                       ),
@@ -852,25 +864,37 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  'UTH–SØRENSEN',
-                  style: TextStyle(
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6,
-                    color: RecovaColors.recoveryEmerald,
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: RecovaColors.recoveryEmerald.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: RecovaColors.recoveryEmerald.withOpacity(0.3),
+                    ),
+                  ),
+                  child: const Text(
+                    'UTH–SØRENSEN',
+                    style: TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                      color: RecovaColors.recoveryEmerald,
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
-            // Live formula math
+            // Live formula math box
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: RecovaColors.surfaceElevation3,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: RecovaColors.borderSubtle),
               ),
               child: Row(
                 children: [
@@ -879,8 +903,8 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
                       '15.3 × (${_calcHrMax.toStringAsFixed(0)} ÷ ${_calcHrRest.toStringAsFixed(1)}) = ${computed.toStringAsFixed(1)} mL/kg/min',
                       style: const TextStyle(
                         fontFamily: 'monospace',
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
                         color: RecovaColors.monochromeWhite,
                       ),
                     ),
@@ -888,14 +912,14 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
             // Variables chips
             Row(
               children: [
-                _calcChip('HRmax', '${_calcHrMax.toStringAsFixed(0)} bpm', 'Peak Workout'),
+                _calcChip('HRmax', '${_calcHrMax.toStringAsFixed(0)} bpm', 'Recent Run'),
                 const SizedBox(width: 6),
-                _calcChip('HRrest', '${_calcHrRest.toStringAsFixed(1)} bpm', '7D Baseline'),
+                _calcChip('HRrest', '${_calcHrRest.toStringAsFixed(1)} bpm', 'Awake RHR'),
                 const SizedBox(width: 6),
                 _calcChip('Factor', '15.3', 'Clinical Ratio'),
               ],
