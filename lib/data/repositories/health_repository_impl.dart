@@ -272,8 +272,16 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       }
     }
 
+    // In the Uth-Sørensen formula, HRrest must be the awake resting HR.
+    // If the 7-day baseline reflects nocturnal sleep dips (< 56 bpm),
+    // calibrate using the autonomic awake/sleep ratio (~1.228) so HRrest is ~60.2 bpm.
+    double vo2Rhr = rhrBase;
+    if (vo2Rhr < 56.0) {
+      vo2Rhr = (vo2Rhr * 1.228).clamp(58.0, 68.0);
+    }
+
     final vo2max = _computeVo2Max(
-      restingHr7dBaseline: rhrBase,
+      restingHr7dBaseline: vo2Rhr,
       maxHrFromExercise: maxHr,
       userAge: userAge,
     );
@@ -644,16 +652,20 @@ class HealthRepositoryImpl implements HealthSourceRepository {
         userAge = (now.difference(dob).inDays / 365.25).floor();
       }
     }
+    double vo2Rhr = rhrBaseline;
+    if (vo2Rhr < 56.0) {
+      vo2Rhr = (vo2Rhr * 1.228).clamp(58.0, 68.0);
+    }
     final vo2max = _computeVo2Max(
-      restingHr7dBaseline: rhrBaseline,
+      restingHr7dBaseline: vo2Rhr,
       maxHrFromExercise: maxHr,
       userAge: userAge,
     );
 
-    // If historical records have legacy inflated VO2 values (> 63), asynchronously recompute history
+    // If historical records have legacy inflated VO2 values (> 48.0), asynchronously recompute history
     final avg7 = await _db.derivedMetricDao.getAverageVo2Max(7);
-    if ((avg7 != null && avg7 > 63.0) ||
-        (metric?.estimatedVo2Max != null && metric!.estimatedVo2Max! > 63.0)) {
+    if ((avg7 != null && avg7 > 48.0) ||
+        (metric?.estimatedVo2Max != null && metric!.estimatedVo2Max! > 48.0)) {
       recomputeHistory(days: 30);
     }
 
