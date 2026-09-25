@@ -22,6 +22,9 @@ import 'package:whoop/domain/repositories/health_source_repository.dart';
 
 class MockHealthRepo implements HealthSourceRepository {
   @override
+  DerivedMetricSummary? get cachedSummary => null;
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
