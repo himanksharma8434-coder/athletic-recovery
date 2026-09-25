@@ -41,9 +41,32 @@ class RecoveryDeepDiveScreen extends StatefulWidget {
   State<RecoveryDeepDiveScreen> createState() => _RecoveryDeepDiveScreenState();
 }
 
+class _MetricDataCache {
+  final List<DailyMetricPoint> points;
+  final double? avg;
+  final double? latest;
+  final double? minVal;
+  final double? maxVal;
+  final double? hrMax;
+  final double? hrRest;
+
+  const _MetricDataCache({
+    required this.points,
+    this.avg,
+    this.latest,
+    this.minVal,
+    this.maxVal,
+    this.hrMax,
+    this.hrRest,
+  });
+}
+
 class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
   CardioMetric _selectedMetric = CardioMetric.vo2Max;
   Vo2Period _selectedPeriod = Vo2Period.sevenDays;
+
+  final Map<String, _MetricDataCache> _cache = {};
+  String get _cacheKey => '${_selectedMetric.name}_${_selectedPeriod.name}';
 
   List<DailyMetricPoint> _points = [];
   bool _loading = false;
@@ -67,11 +90,28 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.summary?.estimatedVo2Max != widget.summary?.estimatedVo2Max ||
         oldWidget.summary?.restingHr != widget.summary?.restingHr) {
+      _cache.clear();
       _loadMetricData();
     }
   }
 
   Future<void> _loadMetricData() async {
+    final cacheKey = _cacheKey;
+    if (_cache.containsKey(cacheKey)) {
+      final cached = _cache[cacheKey]!;
+      setState(() {
+        _points = cached.points;
+        _average = cached.avg;
+        _latest = cached.latest;
+        _min = cached.minVal;
+        _max = cached.maxVal;
+        if (cached.hrMax != null) _calcHrMax = cached.hrMax!;
+        if (cached.hrRest != null) _calcHrRest = cached.hrRest!;
+        _loading = false;
+      });
+      return;
+    }
+
     setState(() => _loading = true);
     try {
       final db = AppDatabase.instance;
@@ -172,6 +212,16 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
           hrRest = 60.2;
         }
       }
+
+      _cache[cacheKey] = _MetricDataCache(
+        points: points,
+        avg: avg,
+        latest: latest,
+        minVal: minVal,
+        maxVal: maxVal,
+        hrMax: hrMax,
+        hrRest: hrRest,
+      );
 
       if (mounted) {
         setState(() {
@@ -715,7 +765,8 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
 
     return SizedBox(
       height: 155,
-      child: LineChart(
+      child: RepaintBoundary(
+        child: LineChart(
         LineChartData(
           gridData: FlGridData(
             show: true,
@@ -866,6 +917,7 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

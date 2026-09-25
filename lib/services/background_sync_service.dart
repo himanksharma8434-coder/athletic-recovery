@@ -37,6 +37,11 @@ void callbackDispatcher() {
             errorMessage: 'Health permissions not granted',
           );
           return true;
+        // Avoid redundant background sync if a sync occurred recently (e.g. user had app open)
+        final lastGlobalSync = await db.syncDao.getLastSyncedAt('GLOBAL_SYNC');
+        if (lastGlobalSync != null &&
+            DateTime.now().difference(lastGlobalSync) < const Duration(minutes: 5)) {
+          return true;
         }
 
         await repository.syncHealthData(taskType: 'background');
