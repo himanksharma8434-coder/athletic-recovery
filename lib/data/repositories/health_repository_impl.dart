@@ -68,10 +68,11 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       return _activeSyncFuture!;
     }
     final future = _performSyncHealthData(taskType: taskType);
-    _activeSyncFuture = future;
-    return future.whenComplete(() {
+    final wrapped = future.whenComplete(() {
       _activeSyncFuture = null;
     });
+    _activeSyncFuture = wrapped;
+    return wrapped;
   }
 
   Future<int> _performSyncHealthData({required String taskType}) async {

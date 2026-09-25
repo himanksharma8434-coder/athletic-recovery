@@ -77,13 +77,15 @@ class _RadialScoreGaugeState extends State<RadialScoreGauge>
           ),
 
           // Custom Painter for Nothing NDot concentric dotted track and arc
-          CustomPaint(
-            size: Size(widget.size, widget.size),
-            painter: _NothingGaugePainter(
-              score: effectiveScore,
-              accentColor: tier == RecoveryTier.suppressed
-                  ? RecovaColors.nothingRed
-                  : RecovaColors.monochromeWhite,
+          RepaintBoundary(
+            child: CustomPaint(
+              size: Size(widget.size, widget.size),
+              painter: _NothingGaugePainter(
+                score: effectiveScore,
+                accentColor: tier == RecoveryTier.suppressed
+                    ? RecovaColors.nothingRed
+                    : RecovaColors.monochromeWhite,
+              ),
             ),
           ),
 
