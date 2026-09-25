@@ -44,9 +44,25 @@ class RestingHrDetailScreen extends StatefulWidget {
   State<RestingHrDetailScreen> createState() => _RestingHrDetailScreenState();
 }
 
+class _RhrCacheItem {
+  final List<_HrDataPoint> points;
+  final double avg;
+  final double? min;
+  final double? max;
+
+  const _RhrCacheItem({
+    required this.points,
+    required this.avg,
+    this.min,
+    this.max,
+  });
+}
+
 class _RestingHrDetailScreenState extends State<RestingHrDetailScreen> {
   RestingHrFilter _selectedFilter = RestingHrFilter.sevenDays;
   bool _isLoading = false;
+
+  final Map<RestingHrFilter, _RhrCacheItem> _cache = {};
 
   List<_HrDataPoint> _points = [];
   double? _averageHr;
@@ -61,6 +77,19 @@ class _RestingHrDetailScreenState extends State<RestingHrDetailScreen> {
   }
 
   Future<void> _loadRestingHrData(RestingHrFilter filter) async {
+    if (_cache.containsKey(filter)) {
+      final cached = _cache[filter]!;
+      setState(() {
+        _previousAverageHr = _averageHr;
+        _points = cached.points;
+        _averageHr = cached.avg;
+        _minHr = cached.min;
+        _maxHr = cached.max;
+        _isLoading = false;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });

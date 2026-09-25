@@ -15,45 +15,14 @@ class RecoveryCalculationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Compute live components from the use case logic if summary is present
-    double hrvComponent = summary?.recoveryComponentHrv ?? 75.0;
-    double rhrComponent = summary?.recoveryComponentRhr ?? 50.0;
-    double sleepComponent = summary?.recoveryComponentSleep ?? 50.0;
-    double spo2Component = summary?.recoveryComponentSpo2 ?? 50.0;
-    double respComponent = summary?.recoveryComponentRespiratory ?? 100.0;
-    String primaryFactor = summary?.primaryFactor ?? 'Baselines calibrating.';
-    double? liveScore = summary?.recoveryScore;
-
-    if (summary != null) {
-      const calculator = ComputeRecoveryScore();
-      final res = calculator(
-        todayHrv: summary!.hrvMs,
-        hrvBaseline: summary!.baselineHrv,
-        todayRhr: summary!.restingHr,
-        rhrBaseline7d: summary!.baselineRestingHr,
-        lastNightSleepMinutes: summary!.sleepHours != null
-            ? summary!.sleepHours! * 60
-            : null,
-        sleepBaseline7d: summary!.baselineSleepHours != null
-            ? summary!.baselineSleepHours! * 60
-            : null,
-        deepSleepMinutes: summary!.sleepStages?.deepMinutes,
-        remSleepMinutes: summary!.sleepStages?.remMinutes,
-        todaySpo2: summary!.spo2,
-        spo2Baseline7d: summary!.baselineSpo2 ?? 97.0,
-        todayRespiratoryRate: summary!.respiratoryRate,
-        respiratoryRateBaseline: summary!.baselineRespiratoryRate ?? 14.0,
-      );
-      hrvComponent = res.hrvComponent ?? (summary!.recoveryComponentHrv ?? 75.0);
-      rhrComponent = res.rhrComponent;
-      sleepComponent = res.sleepComponent;
-      spo2Component = res.spo2Component;
-      respComponent = res.respiratoryComponent ?? (summary!.recoveryComponentRespiratory ?? 100.0);
-      primaryFactor = res.primaryFactor;
-      liveScore = res.score;
-    }
-
-    final score = liveScore;
+    // Read pre-computed recovery components and composite score directly from local database summary
+    final hrvComponent = summary?.recoveryComponentHrv ?? 75.0;
+    final rhrComponent = summary?.recoveryComponentRhr ?? 50.0;
+    final sleepComponent = summary?.recoveryComponentSleep ?? 50.0;
+    final spo2Component = summary?.recoveryComponentSpo2 ?? 50.0;
+    final respComponent = summary?.recoveryComponentRespiratory ?? 100.0;
+    final primaryFactor = summary?.primaryFactor ?? 'Baselines calibrating.';
+    final score = summary?.recoveryScore;
     final tier = RecoveryTier.fromScore(score);
 
     // Combined pulmonary / vital score for SpO2 + Respiratory (5% + 5% = 10%)
