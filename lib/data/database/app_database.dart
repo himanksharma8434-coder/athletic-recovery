@@ -45,4 +45,27 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   int get schemaVersion => 1;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) async {
+          await m.createAll();
+        },
+        beforeOpen: (details) async {
+          try {
+            await customStatement('PRAGMA journal_mode = WAL;');
+            await customStatement('PRAGMA synchronous = NORMAL;');
+          } catch (_) {}
+          try {
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_raw_records_type_start ON raw_health_records (record_type, start_time);');
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_raw_records_type_end ON raw_health_records (record_type, end_time);');
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_derived_metrics_date ON derived_metrics (date);');
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_daily_baselines_date ON daily_baselines (date);');
+          } catch (_) {}
+        },
+      );
 }

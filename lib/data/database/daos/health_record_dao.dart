@@ -195,6 +195,131 @@ class HealthRecordDao extends DatabaseAccessor<AppDatabase>
     return null;
   }
 
+  /// Batch retrieves exercise max HR for 7D, 30D, 60D, and All-Time windows
+  /// in a single efficient query pass to eliminate 4x redundant database queries.
+  Future<({double? max7d, double? max30d, double? max60d, double? maxAllTime})>
+      getExerciseMaxHrsByWindows(DateTime now) async {
+    final startAllTime = DateTime(2000);
+
+    // 1. Fetch all workout sessions across all time, ordered by most recent first
+    final workouts = await (select(rawHealthRecords)
+          ..where((r) =>
+              r.recordType.equals('WORKOUT') &
+              r.startTime.isBiggerOrEqualValue(startAllTime) &
+              r.endTime.isSmallerOrEqualValue(now))
+          ..orderBy([(r) => OrderingTerm.desc(r.startTime)]))
+        .get();
+
+    final List<({DateTime date, String type, double peakHr, double maxHr})>
+        workoutPeaks = [];
+
+    if (workouts.isNotEmpty) {
+      for (final w in workouts) {
+        final hrs = await (select(rawHealthRecords)
+              ..where((r) =>
+                  r.recordType.equals('HEART_RATE') &
+                  r.startTime.isBiggerOrEqualValue(w.startTime) &
+                  r.endTime.isSmallerOrEqualValue(w.endTime) &
+                  r.value.isSmallerOrEqualValue(220.0) &
+                  r.value.isBiggerOrEqualValue(60.0))
+              ..orderBy([(r) => OrderingTerm.asc(r.value)]))
+            .get();
+
+        if (hrs.isNotEmpty) {
+          final maxVal = hrs.last.value;
+          double peakVal = maxVal;
+          if (hrs.length >= 5) {
+            final p98Index =
+                ((hrs.length - 1) * 0.98).floor().clamp(0, hrs.length - 1);
+            peakVal = hrs[p98Index].value;
+          }
+          final effectivePeak = (maxVal - peakVal <= 8) ? maxVal : peakVal;
+          workoutPeaks.add((
+            date: w.startTime,
+            type: w.unit.toUpperCase(),
+            peakHr: effectivePeak,
+            maxHr: maxVal,
+          ));
+        }
+      }
+    }
+
+    // 2. Fetch aerobic heart rates across all time once (for fallback windows with no workouts)
+    List<RawHealthRecord>? aerobicHrsCache;
+    Future<List<RawHealthRecord>> getAerobicHrs() async {
+      return aerobicHrsCache ??= await (select(rawHealthRecords)
+            ..where((r) =>
+                r.recordType.equals('HEART_RATE') &
+                r.startTime.isBiggerOrEqualValue(startAllTime) &
+                r.endTime.isSmallerOrEqualValue(now) &
+                r.value.isBiggerOrEqualValue(120.0) &
+                r.value.isSmallerOrEqualValue(215.0))
+            ..orderBy([(r) => OrderingTerm.desc(r.value)]))
+          .get();
+    }
+
+    double? resolveForWindow(
+        DateTime windowStart, List<RawHealthRecord> aerobicHrs) {
+      final peaksInWindow = workoutPeaks
+          .where((w) =>
+              (w.date.isAfter(windowStart) ||
+                  w.date.isAtSameMomentAs(windowStart)) &&
+              (w.date.isBefore(now) || w.date.isAtSameMomentAs(now)))
+          .toList();
+
+      if (peaksInWindow.isNotEmpty) {
+        final recentCutoff = now.subtract(const Duration(days: 14));
+        final recentCardio = peaksInWindow.where((w) =>
+            (w.type.contains('RUN') ||
+                w.type.contains('CARDIO') ||
+                w.type.contains('CYCLE') ||
+                w.type.contains('AEROBIC')) &&
+            w.date.isAfter(recentCutoff)).toList();
+
+        if (recentCardio.isNotEmpty) {
+          return recentCardio.first.peakHr;
+        }
+
+        final recentWorkouts =
+            peaksInWindow.where((w) => w.date.isAfter(recentCutoff)).toList();
+        if (recentWorkouts.isNotEmpty) {
+          return recentWorkouts.first.peakHr;
+        }
+
+        final sorted = List.of(peaksInWindow)
+          ..sort((a, b) => b.peakHr.compareTo(a.peakHr));
+        return sorted.first.peakHr;
+      }
+
+      final aerobicInWindow = aerobicHrs
+          .where((r) =>
+              (r.startTime.isAfter(windowStart) ||
+                  r.startTime.isAtSameMomentAs(windowStart)) &&
+              (r.endTime.isBefore(now) || r.endTime.isAtSameMomentAs(now)))
+          .toList();
+
+      if (aerobicInWindow.length >= 3) {
+        return aerobicInWindow[1].value;
+      } else if (aerobicInWindow.isNotEmpty) {
+        return aerobicInWindow.first.value;
+      }
+
+      return null;
+    }
+
+    final aerobicHrs = await getAerobicHrs();
+    final cutoff7d = now.subtract(const Duration(days: 7));
+    final cutoff30d = now.subtract(const Duration(days: 30));
+    final cutoff60d = now.subtract(const Duration(days: 60));
+
+    return (
+      max7d: resolveForWindow(cutoff7d, aerobicHrs),
+      max30d: resolveForWindow(cutoff30d, aerobicHrs),
+      max60d: resolveForWindow(cutoff60d, aerobicHrs),
+      maxAllTime: resolveForWindow(startAllTime, aerobicHrs),
+    );
+  }
+
   /// Get sleep session records for baseline computation.
   Future<List<RawHealthRecord>> getSleepRecords({
     required DateTime start,
