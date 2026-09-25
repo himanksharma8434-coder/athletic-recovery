@@ -65,6 +65,10 @@ class AppDatabase extends _$AppDatabase {
                 'CREATE INDEX IF NOT EXISTS idx_derived_metrics_date ON derived_metrics (date);');
             await customStatement(
                 'CREATE INDEX IF NOT EXISTS idx_daily_baselines_date ON daily_baselines (date);');
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_sync_metadata_type ON sync_metadata (record_type);');
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_sync_logs_timestamp ON sync_logs (timestamp);');
           } catch (_) {}
         },
       );
