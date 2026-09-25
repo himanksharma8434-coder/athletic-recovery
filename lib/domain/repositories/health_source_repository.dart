@@ -29,6 +29,9 @@ abstract class HealthSourceRepository {
   /// Get the latest derived metrics for the dashboard.
   Future<DerivedMetricSummary?> getLatestSummary();
 
+  /// In-memory cached summary for instantaneous synchronous UI display.
+  DerivedMetricSummary? get cachedSummary;
+
   /// Stream of the latest derived metrics for reactive UI.
   Stream<DerivedMetricSummary?> watchLatestSummary();
 }

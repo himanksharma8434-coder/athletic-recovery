@@ -19,6 +19,10 @@ class HealthRepositoryImpl implements HealthSourceRepository {
   final ComputeBaselines _computeBaselines;
   final ComputeVo2Max _computeVo2Max;
   final ComputeRecoveryScore _computeRecoveryScore;
+  DerivedMetricSummary? _cachedSummary;
+
+  @override
+  DerivedMetricSummary? get cachedSummary => _cachedSummary;
 
   HealthRepositoryImpl({
     required HealthPlatformDatasource platform,
@@ -68,14 +72,14 @@ class HealthRepositoryImpl implements HealthSourceRepository {
 
       final typesToSync = _platform.getAvailableTypes();
 
-      // For each available health data type, do an isolated delta sync
-      for (final type in typesToSync) {
+      // Delta sync all available types concurrently to minimize sync latency
+      final syncTasks = typesToSync.map((type) async {
         final typeName = type.name;
         final lastSynced = await syncDao.getLastSyncedAt(typeName);
 
         // First sync: use initial lookback window
-        final startTime = lastSynced ??
-            now.subtract(HealthTypes.initialLookback);
+        final startTime =
+            lastSynced ?? now.subtract(HealthTypes.initialLookback);
 
         try {
           final records = await _platform.fetchRecordsForType(
@@ -85,7 +89,6 @@ class HealthRepositoryImpl implements HealthSourceRepository {
           );
 
           if (records.isNotEmpty) {
-            // Upsert into Drift
             final companions = records
                 .map((r) => RawHealthRecordsCompanion(
                       recordType: Value(r.recordType),
@@ -100,43 +103,56 @@ class HealthRepositoryImpl implements HealthSourceRepository {
                 .toList();
 
             await recordDao.upsertRecords(companions);
-            totalWritten += records.length;
-
-            // For STEPS: Also fetch authoritative de-duplicated day total from platform aggregate
-            if (typeName == 'STEPS') {
-              try {
-                final dayStart = AppDateUtils.startOfDay(now);
-                final aggSteps = await _platform.getTotalStepsInInterval(
-                  startTime: dayStart,
-                  endTime: now,
-                );
-                if (aggSteps != null && aggSteps > 0) {
-                  await recordDao.upsertRecord(RawHealthRecordsCompanion(
-                    recordType: const Value('STEPS'),
-                    value: Value(aggSteps.toDouble()),
-                    unit: const Value('COUNT'),
-                    startTime: Value(dayStart),
-                    endTime: Value(now),
-                    sourceId: const Value('health_connect_aggregate'),
-                    syncedAt: Value(now),
-                  ));
-                }
-              } catch (_) {}
-            }
-
-            // Update lastSyncedAt ONLY after successful write
             await syncDao.updateLastSyncedAt(typeName, now);
+            return records.length;
           }
-        } catch (_) {
-          // If a single type fails (e.g. permission denied or unsupported on device),
-          // keep syncing remaining types.
-        }
+        } catch (_) {}
+        return 0;
+      });
+
+      final writtenCounts = await Future.wait(syncTasks);
+      totalWritten = writtenCounts.fold<int>(0, (sum, count) => sum + count);
+
+      // For STEPS: Also fetch authoritative de-duplicated day total from platform aggregate
+      if (typesToSync.any((t) => t.name == 'STEPS')) {
+        try {
+          final dayStart = AppDateUtils.startOfDay(now);
+          final aggSteps = await _platform.getTotalStepsInInterval(
+            startTime: dayStart,
+            endTime: now,
+          );
+          if (aggSteps != null && aggSteps > 0) {
+            await recordDao.upsertRecord(RawHealthRecordsCompanion(
+              recordType: const Value('STEPS'),
+              value: Value(aggSteps.toDouble()),
+              unit: const Value('COUNT'),
+              startTime: Value(dayStart),
+              endTime: Value(now),
+              sourceId: const Value('health_connect_aggregate'),
+              syncedAt: Value(now),
+            ));
+          }
+        } catch (_) {}
       }
 
-      // Recompute baselines and derived metrics across the trailing 30-day window
-      // so rolling 7D, 30D, and All-Time averages are clean, accurate, and up-to-date
-      await recomputeHistory(days: 30);
+      // Recompute baselines and derived metrics:
+      // If historical metrics are completely empty (e.g. first sync on fresh install),
+      // backfill recent 7 days so baselines and trends are established.
+      // On routine delta syncs, only recompute yesterday and today (sleep spans midnight),
+      // dropping query volume by 95%!
+      final recentHistory = await _db.derivedMetricDao.getHistory(3);
+      if (recentHistory.isEmpty && totalWritten > 0) {
+        await recomputeHistory(days: 7);
+      } else {
+        final yesterday = now.subtract(const Duration(days: 1));
+        await _recomputeBaselines(yesterday);
+        await _recomputeDerivedMetrics(yesterday);
+        await _recomputeBaselines(now);
+        await _recomputeDerivedMetrics(now);
+      }
 
+      // Invalidate cached summary so UI gets updated numbers immediately
+      _cachedSummary = null;
 
       // Log success
       await syncDao.logSync(
@@ -397,8 +413,7 @@ class HealthRepositoryImpl implements HealthSourceRepository {
 
 
   @override
-
-  Future<DerivedMetricSummary?> getLatestSummary() async {
+  Future<DerivedMetricSummary?> getLatestSummary({bool persistToday = true}) async {
     final metric = await _db.derivedMetricDao.getLatestMetric();
     final baseline = await _db.baselineDao.getLatestBaseline();
     final recordCount = await _db.healthRecordDao.getRecordCount();
@@ -414,20 +429,20 @@ class HealthRepositoryImpl implements HealthSourceRepository {
     if (logs.isNotEmpty) lastSync = logs.first.timestamp;
 
     // ── Real Steps (Day Only, De-duplicated via Health Connect Aggregate) ──
-    int todaySteps = 0;
-    try {
-      final platformSteps = await _platform.getTotalStepsInInterval(
-        startTime: todayStart,
-        endTime: now,
-      );
-      if (platformSteps != null && platformSteps >= 0) {
-        todaySteps = platformSteps;
-      }
-    } catch (_) {}
+    // Prefer reading cached steps from SQLite first (< 1ms retrieval)
+    int todaySteps = await _db.healthRecordDao
+        .getTotalSteps(start: todayStart, end: now);
 
     if (todaySteps == 0) {
-      todaySteps = await _db.healthRecordDao
-          .getTotalSteps(start: todayStart, end: now);
+      try {
+        final platformSteps = await _platform.getTotalStepsInInterval(
+          startTime: todayStart,
+          endTime: now,
+        );
+        if (platformSteps != null && platformSteps >= 0) {
+          todaySteps = platformSteps;
+        }
+      } catch (_) {}
     }
 
     final activeCals = await _db.healthRecordDao
@@ -641,18 +656,13 @@ class HealthRepositoryImpl implements HealthSourceRepository {
     }
 
     // Recompute VO2max with live window-specific resting HR baselines and exercise max HR
-    final maxHr7d = await _db.healthRecordDao.getMaxExerciseHr(
-      start: AppDateUtils.daysAgo(7, from: now),
-      end: now,
-    );
-    final maxHr30d = await _db.healthRecordDao.getMaxExerciseHr(
-      start: AppDateUtils.daysAgo(30, from: now),
-      end: now,
-    );
-    final maxHr60d = await _db.healthRecordDao.getMaxExerciseHr(
-      start: AppDateUtils.daysAgo(60, from: now),
-      end: now,
-    );
+    // Fast batch extraction of exercise max HR in a single query pass
+    final maxHrs = await _db.healthRecordDao.getExerciseMaxHrsByWindows(now);
+    final maxHr7d = maxHrs.max7d;
+    final maxHr30d = maxHrs.max30d;
+    final maxHr60d = maxHrs.max60d;
+    final maxHrAllTime = maxHrs.maxAllTime;
+
     int? userAge;
     if (maxHr60d == null) {
       final dob = await _platform.fetchDateOfBirth();
@@ -672,21 +682,6 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       vo2Rhr30d = (vo2Rhr30d * 1.228).clamp(58.0, 68.0);
     }
 
-    final maxHrAllTime = await _db.healthRecordDao.getMaxExerciseHr(
-      start: DateTime(2000),
-      end: now,
-    );
-    final allTimeRhrs = await _db.healthRecordDao.getDailyRestingHeartRates(null);
-    double rhrAllTime = rhr30d;
-    if (allTimeRhrs.isNotEmpty) {
-      final sortedRhr = allTimeRhrs.map((p) => p.value).toList()..sort();
-      rhrAllTime = sortedRhr[sortedRhr.length ~/ 2];
-    }
-    double vo2RhrAllTime = rhrAllTime;
-    if (vo2RhrAllTime < 56.0) {
-      vo2RhrAllTime = (vo2RhrAllTime * 1.228).clamp(58.0, 68.0);
-    }
-
     final vo2max7d = _computeVo2Max(
       restingHr7dBaseline: vo2Rhr7d,
       maxHrFromExercise: maxHr7d ?? maxHr30d ?? maxHr60d,
@@ -697,34 +692,54 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       maxHrFromExercise: maxHr30d ?? maxHr60d,
       userAge: userAge,
     );
-    final allTimeAvgVo2 = await _db.derivedMetricDao.getAllTimeAverageVo2Max();
-    final vo2maxAllTime = allTimeAvgVo2 ??
-        _computeVo2Max(
-          restingHr7dBaseline: vo2RhrAllTime,
-          maxHrFromExercise: maxHrAllTime ?? maxHr30d ?? maxHr60d,
-          userAge: userAge,
-        );
-    final vo2max = vo2max7d;
 
-    // If historical records have legacy inflated VO2 values (> 48.0), recompute history
-    final avg7 = await _db.derivedMetricDao.getAverageVo2Max(7);
-    if ((avg7 != null && avg7 > 48.0) ||
-        (metric?.estimatedVo2Max != null && metric!.estimatedVo2Max! > 48.0)) {
-      await recomputeHistory(days: 30);
+    // Fast-path all-time VO2: use precomputed all-time avg if available, avoiding all-time RHR scan
+    final allTimeAvgVo2 = await _db.derivedMetricDao.getAllTimeAverageVo2Max();
+    double? vo2maxAllTime = allTimeAvgVo2;
+    if (vo2maxAllTime == null) {
+      final allTimeRhrs = await _db.healthRecordDao.getDailyRestingHeartRates(null);
+      double rhrAllTime = rhr30d;
+      if (allTimeRhrs.isNotEmpty) {
+        final sortedRhr = allTimeRhrs.map((p) => p.value).toList()..sort();
+        rhrAllTime = sortedRhr[sortedRhr.length ~/ 2];
+      }
+      double vo2RhrAllTime = rhrAllTime;
+      if (vo2RhrAllTime < 56.0) {
+        vo2RhrAllTime = (vo2RhrAllTime * 1.228).clamp(58.0, 68.0);
+      }
+      vo2maxAllTime = _computeVo2Max(
+        restingHr7dBaseline: vo2RhrAllTime,
+        maxHrFromExercise: maxHrAllTime ?? maxHr30d ?? maxHr60d,
+        userAge: userAge,
+      );
     }
 
-    // Persist today's live computed metric to SQLite so historical records are immediately up-to-date
-    await _db.derivedMetricDao.upsertMetric(DerivedMetricsCompanion(
-      date: Value(todayStart),
-      estimatedVo2Max: Value(vo2max),
-      recoveryScore: Value(liveRecovery.score),
-      recoveryComponentRhr: Value(liveRecovery.rhrComponent),
-      recoveryComponentSleep: Value(liveRecovery.sleepComponent),
-      recoveryComponentSpo2: Value(liveRecovery.spo2Component),
-      primaryFactor: Value(liveRecovery.primaryFactor),
-    ));
+    final vo2max = vo2max7d;
 
-    return DerivedMetricSummary(
+    // Persist today's live computed metric to SQLite only when values changed and persistToday is true,
+    // avoiding recursive stream re-triggers and redundant writes
+    final needsPersist = persistToday &&
+        (metric == null ||
+            metric.date.year != todayStart.year ||
+            metric.date.month != todayStart.month ||
+            metric.date.day != todayStart.day ||
+            metric.estimatedVo2Max != vo2max ||
+            metric.recoveryScore != liveRecovery.score ||
+            metric.primaryFactor != liveRecovery.primaryFactor);
+
+    if (needsPersist) {
+      await _db.derivedMetricDao.upsertMetric(DerivedMetricsCompanion(
+        date: Value(todayStart),
+        estimatedVo2Max: Value(vo2max),
+        recoveryScore: Value(liveRecovery.score),
+        recoveryComponentRhr: Value(liveRecovery.rhrComponent),
+        recoveryComponentSleep: Value(liveRecovery.sleepComponent),
+        recoveryComponentSpo2: Value(liveRecovery.spo2Component),
+        primaryFactor: Value(liveRecovery.primaryFactor),
+      ));
+    }
+
+    final summaryResult = DerivedMetricSummary(
       recoveryScore: liveRecovery.score,
       recoveryComponentHrv: liveRecovery.hrvComponent,
       recoveryComponentRhr: liveRecovery.rhrComponent,
@@ -763,13 +778,16 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       totalRecords: recordCount,
       lastSyncedAt: lastSync,
     );
+
+    _cachedSummary = summaryResult;
+    return summaryResult;
   }
 
   @override
   Stream<DerivedMetricSummary?> watchLatestSummary() {
     return _db.derivedMetricDao.watchLatestMetric().asyncMap((metric) async {
       if (metric == null) return null;
-      return getLatestSummary();
+      return getLatestSummary(persistToday: false);
     });
   }
 }

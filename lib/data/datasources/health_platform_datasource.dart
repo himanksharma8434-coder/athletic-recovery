@@ -31,6 +31,8 @@ class HealthPlatformDatasource {
         .toList();
   }
 
+  bool? _cachedPermissionsGranted;
+
   /// Request read authorization for all configured data types.
   Future<bool> requestPermissions() async {
     await configure();
@@ -41,7 +43,10 @@ class HealthPlatformDatasource {
         available,
         permissions: perms,
       );
-      if (granted == true) return true;
+      if (granted == true) {
+        _cachedPermissionsGranted = true;
+        return true;
+      }
     } catch (_) {
       try {
         final coreAvailable = getAvailableCoreTypes();
@@ -50,15 +55,21 @@ class HealthPlatformDatasource {
           coreAvailable,
           permissions: corePerms,
         );
-        if (coreGranted == true) return true;
+        if (coreGranted == true) {
+          _cachedPermissionsGranted = true;
+          return true;
+        }
       } catch (_) {}
     }
 
-    return await hasPermissions();
+    final has = await hasPermissions();
+    if (has) _cachedPermissionsGranted = true;
+    return has;
   }
 
   /// Check whether we have permission to read health data.
   Future<bool> hasPermissions() async {
+    if (_cachedPermissionsGranted == true) return true;
     try {
       // 1. Check if core types are granted
       final coreAvailable = getAvailableCoreTypes();
@@ -67,7 +78,10 @@ class HealthPlatformDatasource {
         coreAvailable,
         permissions: corePerms,
       );
-      if (coreResult == true) return true;
+      if (coreResult == true) {
+        _cachedPermissionsGranted = true;
+        return true;
+      }
 
       // 2. Check individual key types supported on this platform
       final keyTypes = [
@@ -82,7 +96,10 @@ class HealthPlatformDatasource {
             [type],
             permissions: [HealthDataAccess.READ],
           );
-          if (granted == true) return true;
+          if (granted == true) {
+            _cachedPermissionsGranted = true;
+            return true;
+          }
         }
       }
     } catch (_) {}
@@ -235,9 +252,13 @@ class HealthPlatformDatasource {
     }
   }
 
+  DateTime? _cachedDateOfBirth;
+  bool _hasCheckedDateOfBirth = false;
+
   /// Attempts to fetch the user's date of birth from the platform health store.
   /// Used for age-based HRmax fallback without asking the user manually.
   Future<DateTime?> fetchDateOfBirth() async {
+    if (_hasCheckedDateOfBirth) return _cachedDateOfBirth;
     try {
       if (health.isDataTypeAvailable(HealthDataType.BIRTH_DATE)) {
         final records = await health.getHealthDataFromTypes(
@@ -246,13 +267,14 @@ class HealthPlatformDatasource {
           endTime: DateTime.now(),
         );
         if (records.isNotEmpty) {
-          return records.first.dateFrom;
+          _cachedDateOfBirth = records.first.dateFrom;
         }
       }
     } catch (_) {
       // Platform doesn't support reading birth date directly
     }
-    return null;
+    _hasCheckedDateOfBirth = true;
+    return _cachedDateOfBirth;
   }
 }
 

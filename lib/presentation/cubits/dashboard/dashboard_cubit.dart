@@ -8,16 +8,32 @@ class DashboardCubit extends Cubit<DashboardState> {
   final HealthSourceRepository repository;
   StreamSubscription? _subscription;
 
+  static DerivedMetricSummary? _tryGetCached(HealthSourceRepository repo) {
+    try {
+      return repo.cachedSummary;
+    } catch (_) {
+      return null;
+    }
+  }
+
   DashboardCubit({required this.repository})
-      : super(const DashboardLoading());
+      : super(_tryGetCached(repository) != null
+            ? DashboardLoaded(summary: _tryGetCached(repository)!)
+            : const DashboardLoading());
 
   /// Load the latest dashboard data and subscribe to changes.
   Future<void> load() async {
+    // Show cached summary immediately if available
+    final cached = _tryGetCached(repository);
+    if (cached != null && state is! DashboardLoaded) {
+      emit(DashboardLoaded(summary: cached));
+    }
+
     try {
       final summary = await repository.getLatestSummary();
       if (summary != null) {
         emit(DashboardLoaded(summary: summary));
-      } else {
+      } else if (state is! DashboardLoaded) {
         emit(const DashboardEmpty());
       }
 
@@ -32,7 +48,9 @@ class DashboardCubit extends Cubit<DashboardState> {
         onError: (_) {}, // Silently ignore stream errors
       );
     } catch (e) {
-      emit(DashboardError(message: e.toString()));
+      if (state is! DashboardLoaded) {
+        emit(DashboardError(message: e.toString()));
+      }
     }
   }
 
@@ -42,11 +60,13 @@ class DashboardCubit extends Cubit<DashboardState> {
       final summary = await repository.getLatestSummary();
       if (summary != null) {
         emit(DashboardLoaded(summary: summary));
-      } else {
+      } else if (state is! DashboardLoaded) {
         emit(const DashboardEmpty());
       }
     } catch (e) {
-      emit(DashboardError(message: e.toString()));
+      if (state is! DashboardLoaded) {
+        emit(DashboardError(message: e.toString()));
+      }
     }
   }
 
