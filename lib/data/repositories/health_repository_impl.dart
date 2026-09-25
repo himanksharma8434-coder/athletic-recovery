@@ -60,8 +60,21 @@ class HealthRepositoryImpl implements HealthSourceRepository {
     return _platform.fetchRecords(startTime: startTime, endTime: endTime);
   }
 
+  Future<int>? _activeSyncFuture;
+
   @override
-  Future<int> syncHealthData({required String taskType}) async {
+  Future<int> syncHealthData({required String taskType}) {
+    if (_activeSyncFuture != null) {
+      return _activeSyncFuture!;
+    }
+    final future = _performSyncHealthData(taskType: taskType);
+    _activeSyncFuture = future;
+    return future.whenComplete(() {
+      _activeSyncFuture = null;
+    });
+  }
+
+  Future<int> _performSyncHealthData({required String taskType}) async {
     final syncDao = _db.syncDao;
     final recordDao = _db.healthRecordDao;
     final now = DateTime.now();
@@ -154,13 +167,14 @@ class HealthRepositoryImpl implements HealthSourceRepository {
       // Invalidate cached summary so UI gets updated numbers immediately
       _cachedSummary = null;
 
-      // Log success
+      // Log success and update global sync timestamp
       await syncDao.logSync(
         taskType: taskType,
         recordsRead: totalWritten,
         recordsWritten: totalWritten,
         success: true,
       );
+      await syncDao.updateLastSyncedAt('GLOBAL_SYNC', now);
 
       return totalWritten;
     } catch (e) {
