@@ -53,7 +53,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: RecovaColors.canvasBase,
-      body: BlocConsumer<HealthSyncCubit, HealthSyncState>(
+      body: BlocListener<HealthSyncCubit, HealthSyncState>(
         listener: (context, syncState) {
           if (syncState is HealthSyncSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -87,58 +87,62 @@ class _MainShellScreenState extends State<MainShellScreen> {
             );
           }
         },
-        builder: (context, syncState) {
-          return BlocBuilder<DashboardCubit, DashboardState>(
-            builder: (context, state) {
-              DerivedMetricSummary? summary;
-              if (state is DashboardLoaded) {
-                summary = state.summary;
-              }
+        child: BlocBuilder<DashboardCubit, DashboardState>(
+          buildWhen: (prev, current) {
+            if (prev is DashboardLoaded && current is DashboardLoaded) {
+              return prev.summary != current.summary;
+            }
+            return prev != current;
+          },
+          builder: (context, state) {
+            DerivedMetricSummary? summary;
+            if (state is DashboardLoaded) {
+              summary = state.summary;
+            }
 
-              return Stack(
-                children: [
-                  // Safe Area wrapped IndexedStack
-                  SafeArea(
-                    bottom: false,
-                    child: IndexedStack(
-                      index: _currentTab,
-                      children: [
-                        PulseScreen(
-                          summary: summary,
-                          onSyncTap: _onSyncTap,
-                        ),
-                        RecoveryDeepDiveScreen(
-                          summary: summary,
-                        ),
-                        StrainScreen(
-                          summary: summary,
-                        ),
-                        SleepScreen(
-                          summary: summary,
-                        ),
-                      ],
-                    ),
+            return Stack(
+              children: [
+                // Safe Area wrapped IndexedStack
+                SafeArea(
+                  bottom: false,
+                  child: IndexedStack(
+                    index: _currentTab,
+                    children: [
+                      PulseScreen(
+                        summary: summary,
+                        onSyncTap: _onSyncTap,
+                      ),
+                      RecoveryDeepDiveScreen(
+                        summary: summary,
+                      ),
+                      StrainScreen(
+                        summary: summary,
+                      ),
+                      SleepScreen(
+                        summary: summary,
+                      ),
+                    ],
                   ),
+                ),
 
-                  // Floating Pill Bottom Navigation Bar
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: BottomPillNavBar(
-                      selectedIndex: _currentTab,
-                      onTabSelected: (index) {
-                        setState(() {
-                          _currentTab = index;
-                        });
-                      },
-                    ),
+                // Floating Pill Bottom Navigation Bar
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: BottomPillNavBar(
+                    selectedIndex: _currentTab,
+                    onTabSelected: (index) {
+                      setState(() {
+                        _currentTab = index;
+                      });
+                    },
                   ),
-                ],
-              );
-            },
-          );
-        },
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

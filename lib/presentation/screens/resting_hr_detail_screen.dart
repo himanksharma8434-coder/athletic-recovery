@@ -187,13 +187,21 @@ class _RestingHrDetailScreenState extends State<RestingHrDetailScreen> {
         avg = sum / points.length;
       }
 
+      final item = _RhrCacheItem(
+        points: points,
+        avg: avg,
+        min: minV.isFinite ? minV : null,
+        max: maxV.isFinite ? maxV : null,
+      );
+      _cache[filter] = item;
+
       if (mounted) {
         setState(() {
           _previousAverageHr = _averageHr;
           _points = points;
           _averageHr = avg;
-          _minHr = minV.isFinite ? minV : null;
-          _maxHr = maxV.isFinite ? maxV : null;
+          _minHr = item.min;
+          _maxHr = item.max;
           _isLoading = false;
         });
       }
@@ -609,10 +617,12 @@ class _RestingHrDetailScreenState extends State<RestingHrDetailScreen> {
                                   ),
                                 ),
                               )
-                            : LineChart(
-                                _buildChartData(),
-                                duration: const Duration(milliseconds: 450),
-                                curve: Curves.easeInOutCubic,
+                            : RepaintBoundary(
+                                child: LineChart(
+                                  _buildChartData(),
+                                  duration: const Duration(milliseconds: 450),
+                                  curve: Curves.easeInOutCubic,
+                                ),
                               ),
                       ),
                     ),
