@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../core/theme/recova_colors.dart';
+import '../../core/theme/design_tokens.dart';
+import '../components/glass_card.dart';
+import '../components/motion.dart';
 import '../cubits/health_permission/health_permission_cubit.dart';
 import '../cubits/health_permission/health_permission_state.dart';
 import 'main_shell_screen.dart';
 
-/// Kinetic Obsidian styled Permission onboarding screen.
+/// Glassmorphic Permission onboarding screen.
 /// Explains why health data is needed and requests authorization.
 class PermissionScreen extends StatefulWidget {
   const PermissionScreen({super.key});
@@ -34,7 +36,6 @@ class _PermissionScreenState extends State<PermissionScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // When returning from Health Connect settings, auto-verify permissions
       context.read<HealthPermissionCubit>().checkPermissions();
     }
   }
@@ -50,98 +51,100 @@ class _PermissionScreenState extends State<PermissionScreen>
         }
       },
       child: Scaffold(
-        backgroundColor: RecovaColors.canvasBase,
+        backgroundColor: Tok.canvasBase,
         body: SafeArea(
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Tok.space32,
+              vertical: Tok.space24,
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Glowing Icon
+                // Glowing Icon with neon accent
                 Container(
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: RecovaColors.surfaceElevation1,
-                    border: Border.all(color: RecovaColors.borderMedium),
+                    color: Tok.glassFill,
+                    border: Border.all(color: Tok.glassBorderBright, width: 0.5),
                     boxShadow: [
                       BoxShadow(
-                        color:
-                            RecovaColors.recoveryEmerald.withValues(alpha: 0.15),
-                        blurRadius: 32,
+                        color: Tok.neonAccent.withValues(alpha: 0.2),
+                        blurRadius: 40,
                         spreadRadius: 4,
+                      ),
+                      BoxShadow(
+                        color: Tok.neonAccent.withValues(alpha: 0.1),
+                        blurRadius: 16,
+                        spreadRadius: 1,
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.bolt,
                     size: 48,
-                    color: RecovaColors.recoveryEmerald,
+                    color: Tok.neonAccent,
                   ),
-                ),
-                const SizedBox(height: 28),
+                ).animateHero(),
+                const SizedBox(height: Tok.space32),
 
                 // Title
-                const Text(
+                Text(
                   'CONNECT WEARABLE TELEMETRY',
-                  style: TextStyle(
+                  style: TokType.heading.copyWith(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.2,
-                    color: RecovaColors.textPrimary,
                   ),
                   textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
+                ).animateFadeIn(index: 1),
+                const SizedBox(height: Tok.space12),
 
                 // Rationale
-                const Text(
-                  'Recova reads heart rate, sleep architecture, SpO2, and workouts from Nothing X / CMF Watch via Health Connect.\n\n'
+                Text(
+                  'Recova reads heart rate, sleep architecture, SpO2, and workouts from your wearable via Health Connect.\n\n'
                   'All telemetry is computed locally on-device. Zero cloud transmission.',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    height: 1.5,
-                    color: RecovaColors.textSecondary,
-                  ),
+                  style: TokType.body.copyWith(fontSize: 12.5),
                   textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 36),
+                ).animateFadeIn(index: 2),
+                const SizedBox(height: Tok.space32),
 
                 // Data types
-                const _DataTypeChip(
+                _DataTypeChip(
                   icon: Icons.favorite_outline,
                   label: 'Heart Rate & Resting HR',
-                  accentColor: RecovaColors.recoveryEmerald,
-                ),
-                const SizedBox(height: 8),
-                const _DataTypeChip(
+                  accentColor: Tok.neonAccent,
+                ).animateIn(index: 0),
+                const SizedBox(height: Tok.space8),
+                _DataTypeChip(
                   icon: Icons.bedtime_outlined,
                   label: 'Sleep Stages & Architecture',
-                  accentColor: RecovaColors.restorativeAzure,
-                ),
-                const SizedBox(height: 8),
-                const _DataTypeChip(
+                  accentColor: Tok.accentBlue,
+                ).animateIn(index: 1),
+                const SizedBox(height: Tok.space8),
+                _DataTypeChip(
                   icon: Icons.air,
                   label: 'Blood Oxygen Saturation (SpO2)',
-                  accentColor: RecovaColors.kineticAmberGold,
-                ),
-                const SizedBox(height: 8),
-                const _DataTypeChip(
+                  accentColor: Tok.recoveryModerate,
+                ).animateIn(index: 2),
+                const SizedBox(height: Tok.space8),
+                _DataTypeChip(
                   icon: Icons.directions_run,
                   label: 'Workouts, Steps & Active Energy',
-                  accentColor: RecovaColors.recoveryEmeraldBright,
-                ),
-                const SizedBox(height: 8),
-                const _DataTypeChip(
+                  accentColor: Tok.neonAccent,
+                ).animateIn(index: 3),
+                const SizedBox(height: Tok.space8),
+                _DataTypeChip(
                   icon: Icons.thermostat_outlined,
                   label: 'Respiration, Vitals & Temperature',
-                  accentColor: RecovaColors.neuralViolet,
-                ),
-                const SizedBox(height: 32),
+                  accentColor: Tok.textSecondary,
+                ).animateIn(index: 4),
+                const SizedBox(height: Tok.space32),
 
-                // Primary Connect button
+                // Primary Connect button — neon accent CTA
                 BlocBuilder<HealthPermissionCubit, HealthPermissionState>(
                   builder: (context, state) {
                     final isLoading = state is HealthPermissionRequesting;
@@ -155,72 +158,70 @@ class _PermissionScreenState extends State<PermissionScreen>
                                 .read<HealthPermissionCubit>()
                                 .requestPermissions(),
                         style: FilledButton.styleFrom(
-                          backgroundColor: RecovaColors.recoveryEmerald,
-                          foregroundColor: Colors.black,
+                          backgroundColor: Tok.neonAccent,
+                          foregroundColor: Tok.canvasBase,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(26),
+                            borderRadius:
+                                BorderRadius.circular(Tok.radiusXl),
                           ),
                         ),
                         child: isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 22,
                                 height: 22,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.black,
+                                  color: Tok.canvasBase,
                                 ),
                               )
-                            : const Text(
+                            : Text(
                                 'GRANT HEALTH CONNECT ACCESS',
-                                style: TextStyle(
+                                style: TokType.badge.copyWith(
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w700,
                                   letterSpacing: 1.2,
+                                  color: Tok.canvasBase,
                                 ),
                               ),
                       ),
                     );
                   },
-                ),
-                const SizedBox(height: 12),
+                ).animateIn(index: 5),
+                const SizedBox(height: Tok.space12),
 
-                // Secondary Fallback: Direct Proceed / Verify button
+                // Secondary
                 SizedBox(
                   width: double.infinity,
                   height: 44,
                   child: TextButton(
                     onPressed: () {
-                      // Navigate straight to dashboard
                       Navigator.of(context).pushReplacement(
                         MaterialPageRoute(
                             builder: (_) => const MainShellScreen()),
                       );
                     },
                     style: TextButton.styleFrom(
-                      foregroundColor: RecovaColors.textTertiary,
+                      foregroundColor: Tok.textTertiary,
                     ),
-                    child: const Text(
+                    child: Text(
                       'I\'VE ALREADY GRANTED ACCESS • PROCEED',
-                      style: TextStyle(
+                      style: TokType.caption.copyWith(
                         fontSize: 11,
-                        fontWeight: FontWeight.w600,
                         letterSpacing: 0.8,
                       ),
                     ),
                   ),
                 ),
 
-                // Denied or Notice message
+                // Denied message
                 BlocBuilder<HealthPermissionCubit, HealthPermissionState>(
                   builder: (context, state) {
                     if (state is HealthPermissionDenied) {
                       return Padding(
-                        padding: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.only(top: Tok.space8),
                         child: Text(
                           state.message,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: RecovaColors.kineticAmberGold,
+                          style: TokType.bodySmall.copyWith(
+                            color: Tok.recoveryModerate,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -251,25 +252,23 @@ class _DataTypeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: RecovaColors.surfaceElevation1,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: RecovaColors.borderSubtle),
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: Tok.space16,
+        vertical: Tok.space12,
       ),
+      borderRadius: Tok.radiusSm,
       child: Row(
         children: [
           Icon(icon, size: 16, color: accentColor),
-          const SizedBox(width: 10),
+          const SizedBox(width: Tok.space12),
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 12,
+              style: TokType.bodySmall.copyWith(
                 fontWeight: FontWeight.w500,
-                color: RecovaColors.textPrimary,
+                color: Tok.textPrimary,
+                fontSize: 12,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

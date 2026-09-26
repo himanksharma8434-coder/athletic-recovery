@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/recova_colors.dart';
+import '../../core/theme/design_tokens.dart';
 import '../../domain/repositories/health_source_repository.dart';
+import 'glass_card.dart';
 
-/// Full-width Nothing OS Bento Card for Sleep Architecture.
-/// Replaces the squeezed 2-column pod with a comprehensive restorative breakdown.
+/// Full-width Glassmorphic Card for Sleep Architecture.
 class SleepPerformanceCard extends StatelessWidget {
   final double? sleepHours;
   final double? baselineSleepHours;
@@ -36,93 +36,72 @@ class SleepPerformanceCard extends StatelessWidget {
     final hasStages = stages != null && stages.hasStageData;
 
     String debtText = 'AWAITING SLEEP LOG';
-    Color debtColor = RecovaColors.textMuted;
+    Color debtColor = Tok.textMuted;
     if (hasSleep) {
       final diffMins = ((sleep - baselineH) * 60).round();
       if (diffMins >= 0) {
         debtText = '+$diffMins m vs 14D baseline • Fully Restored';
-        debtColor = RecovaColors.textSecondary;
+        debtColor = Tok.textSecondary;
       } else {
         debtText = '${diffMins.abs()} m sleep debt • Cellular deficit';
-        debtColor = RecovaColors.nothingRed;
+        debtColor = Tok.recoverySuppressed;
       }
     }
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return GlassCard(
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: RecovaColors.surfaceElevation1,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: RecovaColors.borderSubtle),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header Row ──
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: const [
-                      Icon(Icons.bedtime_outlined,
-                          size: 14, color: RecovaColors.textTertiary),
-                      SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          'SLEEP ARCHITECTURE',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.0,
-                            color: RecovaColors.textTertiary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header Row ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
                   children: [
-                    Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: RecovaColors.surfaceElevation2,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: RecovaColors.borderSubtle),
-                      ),
+                    Icon(Icons.bedtime_outlined,
+                        size: 14, color: Tok.accentBlue),
+                    const SizedBox(width: Tok.space8),
+                    Flexible(
                       child: Text(
-                        sleepPerf != null ? '$sleepPerf% PERFORMANCE' : '--',
-                        style: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.4,
-                          color: RecovaColors.monochromeWhite,
+                        'SLEEP ARCHITECTURE',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TokType.caption.copyWith(
+                          color: Tok.textTertiary,
+                          letterSpacing: 1.0,
                         ),
                       ),
                     ),
-                    if (onTap != null) ...[
-                      const SizedBox(width: 6),
-                      const Icon(
-                        Icons.chevron_right,
-                        size: 14,
-                        color: RecovaColors.textTertiary,
-                      ),
-                    ],
                   ],
                 ),
-              ],
-            ),
-          const SizedBox(height: 12),
+              ),
+              const SizedBox(width: Tok.space8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GlassPill(
+                    child: Text(
+                      sleepPerf != null ? '$sleepPerf% PERFORMANCE' : '--',
+                      style: TokType.badge.copyWith(
+                        color: Tok.textPrimary,
+                      ),
+                    ),
+                  ),
+                  if (onTap != null) ...[
+                    const SizedBox(width: Tok.space6),
+                    Icon(
+                      Icons.chevron_right,
+                      size: 14,
+                      color: Tok.textTertiary,
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: Tok.space12),
 
           // ── Big Duration Readout & Delta ──
           Row(
@@ -136,21 +115,16 @@ class SleepPerformanceCard extends StatelessWidget {
                 children: [
                   Text(
                     hasSleep ? '${sleepH}h' : '--',
-                    style: const TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w300,
-                      letterSpacing: -0.8,
-                      color: RecovaColors.textPrimary,
-                    ),
+                    style: TokType.metricLarge.copyWith(fontSize: 30),
                   ),
                   if (hasSleep) ...[
-                    const SizedBox(width: 4),
+                    const SizedBox(width: Tok.space4),
                     Text(
                       '${sleepM}m',
-                      style: const TextStyle(
+                      style: TokType.metricMedium.copyWith(
                         fontSize: 17,
                         fontWeight: FontWeight.w300,
-                        color: RecovaColors.textSecondary,
+                        color: Tok.textSecondary,
                       ),
                     ),
                   ],
@@ -158,65 +132,53 @@ class SleepPerformanceCard extends StatelessWidget {
               ),
               Text(
                 'TARGET: ${baselineH.toStringAsFixed(1)}h',
-                style: const TextStyle(
+                style: TokType.caption.copyWith(
                   fontSize: 9.5,
                   fontWeight: FontWeight.w500,
-                  letterSpacing: 0.6,
-                  color: RecovaColors.textTertiary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: Tok.space4),
 
-          // ── Debt / Status Subtitle ──
+          // ── Debt / Status ──
           Text(
             debtText,
-            style: TextStyle(
+            style: TokType.bodySmall.copyWith(
               fontSize: 10,
               fontWeight: FontWeight.w400,
-              letterSpacing: 0.3,
               color: debtColor,
             ),
           ),
           if (sleepSessions.length > 1) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: Tok.space8),
             Wrap(
-              spacing: 6,
-              runSpacing: 4,
+              spacing: Tok.space6,
+              runSpacing: Tok.space4,
               children: sleepSessions.map((s) {
                 final sH = s.durationHours.floor();
                 final sM = s.durationMinutes % 60;
                 final durStr = sH > 0 ? '${sH}h ${sM}m' : '${sM}m';
                 final isNight = s.type == SleepSessionType.nightSleep;
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: RecovaColors.surfaceElevation2,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: isNight
-                          ? RecovaColors.borderSubtle
-                          : RecovaColors.nothingRed.withValues(alpha: 0.25),
-                    ),
-                  ),
+                return GlassPill(
+                  accentColor: isNight ? null : Tok.recoverySuppressed,
                   child: Text(
                     '${s.title} • $durStr',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w500,
-                      color: isNight ? RecovaColors.textSecondary : RecovaColors.nothingRed,
+                    style: TokType.badge.copyWith(
+                      color: isNight
+                          ? Tok.textSecondary
+                          : Tok.recoverySuppressed,
                     ),
                   ),
                 );
               }).toList(),
             ),
           ],
-          const SizedBox(height: 14),
+          const SizedBox(height: Tok.space16),
 
-          // ── Monochrome Stage Distribution Bar ──
+          // ── Stage Distribution Bar ──
           ClipRRect(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(Tok.space2),
             child: SizedBox(
               height: 4,
               child: hasStages
@@ -225,60 +187,56 @@ class SleepPerformanceCard extends StatelessWidget {
                         if (stages.deepMinutes > 0)
                           Expanded(
                             flex: stages.deepMinutes,
-                            child: Container(
-                                color: RecovaColors.monochromeWhite),
+                            child: Container(color: Tok.neonAccent),
                           ),
                         if (stages.remMinutes > 0)
                           Expanded(
                             flex: stages.remMinutes,
-                            child: Container(
-                                color: RecovaColors.monochromeSilver),
+                            child: Container(color: Tok.accentBlue),
                           ),
                         if (stages.lightMinutes > 0)
                           Expanded(
                             flex: stages.lightMinutes,
-                            child: Container(
-                                color: RecovaColors.monochromeGray),
+                            child: Container(color: Tok.textTertiary),
                           ),
                         if (stages.awakeMinutes > 0)
                           Expanded(
                             flex: stages.awakeMinutes,
-                            child: Container(
-                                color: RecovaColors.nothingRed),
+                            child: Container(color: Tok.recoverySuppressed),
                           ),
                       ],
                     )
                   : Container(
                       color: hasSleep
-                          ? RecovaColors.monochromeSilver
-                          : Colors.white.withValues(alpha: 0.08),
+                          ? Tok.textTertiary
+                          : Tok.glassFillRecessed,
                     ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Tok.space12),
 
-          // ── Stages Legend (Responsive Wrap) ──
+          // ── Stages Legend ──
           Wrap(
-            spacing: 10,
-            runSpacing: 6,
+            spacing: Tok.space12,
+            runSpacing: Tok.space6,
             children: [
               _StageLegendItem(
-                dotColor: RecovaColors.monochromeWhite,
+                dotColor: Tok.neonAccent,
                 label: 'DEEP',
                 value: hasStages ? '${stages.deepMinutes}m' : '--',
               ),
               _StageLegendItem(
-                dotColor: RecovaColors.monochromeSilver,
+                dotColor: Tok.accentBlue,
                 label: 'REM',
                 value: hasStages ? '${stages.remMinutes}m' : '--',
               ),
               _StageLegendItem(
-                dotColor: RecovaColors.monochromeGray,
+                dotColor: Tok.textTertiary,
                 label: 'LIGHT',
                 value: hasStages ? '${stages.lightMinutes}m' : '--',
               ),
               _StageLegendItem(
-                dotColor: RecovaColors.nothingRed,
+                dotColor: Tok.recoverySuppressed,
                 label: 'AWAKE',
                 value: hasStages ? '${stages.awakeMinutes}m' : '--',
               ),
@@ -286,9 +244,8 @@ class SleepPerformanceCard extends StatelessWidget {
           ),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class _StageLegendItem extends StatelessWidget {
@@ -313,17 +270,18 @@ class _StageLegendItem extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: dotColor,
+            boxShadow: [
+              BoxShadow(
+                color: dotColor.withValues(alpha: 0.4),
+                blurRadius: 4,
+              ),
+            ],
           ),
         ),
         const SizedBox(width: 5),
         Text(
           '$label $value',
-          style: const TextStyle(
-            fontSize: 9,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.6,
-            color: RecovaColors.textTertiary,
-          ),
+          style: TokType.caption,
         ),
       ],
     );
