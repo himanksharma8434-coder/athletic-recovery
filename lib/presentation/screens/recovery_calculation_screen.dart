@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/recova_colors.dart';
 import '../../domain/repositories/health_source_repository.dart';
-import '../../domain/usecases/compute_recovery_score.dart';
 
 /// Scientific Explainer Screen detailing how Recova calculates
 /// the daily recovery score using the 3-pillar biometric algorithm.

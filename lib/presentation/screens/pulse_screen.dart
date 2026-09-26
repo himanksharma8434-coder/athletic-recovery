@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../core/theme/recova_colors.dart';
+import '../../core/theme/design_tokens.dart';
 import '../../domain/repositories/health_source_repository.dart';
 import '../components/daily_activity_pod.dart';
+import '../components/glass_card.dart';
+import '../components/motion.dart';
 import '../components/radial_score_gauge.dart';
 import '../components/sleep_performance_card.dart';
 import '../components/vital_metric_tile.dart';
@@ -69,44 +71,49 @@ class PulseScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Dynamic RHR delta vs baseline
     String rhrDeltaText = 'Awaiting sync';
-    Color rhrDeltaColor = RecovaColors.textMuted;
+    Color rhrDeltaColor = Tok.textMuted;
     if (summary?.restingHr != null && summary?.baselineRestingHr != null) {
       final diff = (summary!.restingHr! - summary!.baselineRestingHr!).round();
       if (diff < 0) {
         rhrDeltaText = '$diff bpm basal';
-        rhrDeltaColor = RecovaColors.textSecondary;
+        rhrDeltaColor = Tok.textSecondary;
       } else if (diff > 0) {
         rhrDeltaText = '+$diff bpm basal';
-        rhrDeltaColor = RecovaColors.nothingRed;
+        rhrDeltaColor = Tok.recoverySuppressed;
       } else {
         rhrDeltaText = 'On baseline';
-        rhrDeltaColor = RecovaColors.textSecondary;
+        rhrDeltaColor = Tok.textSecondary;
       }
     } else if (summary?.restingHr != null) {
       rhrDeltaText = 'Current basal';
-      rhrDeltaColor = RecovaColors.textSecondary;
+      rhrDeltaColor = Tok.textSecondary;
     }
 
     // Dynamic SpO2 delta / state
     String spo2DeltaText = 'Awaiting sync';
-    Color spo2DeltaColor = RecovaColors.textMuted;
+    Color spo2DeltaColor = Tok.textMuted;
     if (summary?.spo2 != null) {
       if (summary!.spo2! >= 95) {
         spo2DeltaText = 'Optimal range';
-        spo2DeltaColor = RecovaColors.textSecondary;
+        spo2DeltaColor = Tok.textSecondary;
       } else {
         spo2DeltaText = 'Elevated desat';
-        spo2DeltaColor = RecovaColors.nothingRed;
+        spo2DeltaColor = Tok.recoverySuppressed;
       }
     }
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 100),
+      padding: const EdgeInsets.only(
+        left: Tok.space16,
+        right: Tok.space16,
+        top: Tok.space12,
+        bottom: 100,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // ── Clean Minimalist Top Header ──
+          // ── Header ──
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -116,12 +123,7 @@ class PulseScreen extends StatelessWidget {
                 children: [
                   Text(
                     'Today, ${_currentDateFormatted()}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.3,
-                      color: RecovaColors.textPrimary,
-                    ),
+                    style: TokType.heading,
                   ),
                   const SizedBox(height: 3),
                   Row(
@@ -132,67 +134,66 @@ class PulseScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: summary != null
-                              ? RecovaColors.monochromeWhite
-                              : RecovaColors.textMuted,
+                              ? Tok.neonAccent
+                              : Tok.textMuted,
+                          boxShadow: summary != null
+                              ? [
+                                  BoxShadow(
+                                    color: Tok.neonAccent.withValues(alpha: 0.5),
+                                    blurRadius: 6,
+                                    spreadRadius: 1,
+                                  ),
+                                ]
+                              : [],
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: Tok.space6),
                       Text(
                         summary != null
                             ? 'Synced with wearable'
                             : 'Awaiting wearable sync',
-                        style: const TextStyle(
+                        style: TokType.bodySmall.copyWith(
                           fontSize: 11,
-                          fontWeight: FontWeight.w400,
-                          letterSpacing: 0.2,
-                          color: RecovaColors.textTertiary,
+                          color: Tok.textTertiary,
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-              // Clean Sensor Sync Action Button
+              // Sync Button
               BlocBuilder<HealthSyncCubit, HealthSyncState>(
+                buildWhen: (prev, current) =>
+                    (prev is HealthSyncing) != (current is HealthSyncing),
                 builder: (context, state) {
-                  return IconButton(
-                    onPressed: state is HealthSyncing ? null : onSyncTap,
-                    style: IconButton.styleFrom(
-                      backgroundColor: RecovaColors.surfaceElevation1,
-                      padding: const EdgeInsets.all(10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: RecovaColors.borderSubtle),
-                      ),
-                    ),
-                    icon: state is HealthSyncing
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: RecovaColors.monochromeWhite,
-                            ),
+                  return GlassCard(
+                    borderRadius: Tok.radiusSm,
+                    padding: const EdgeInsets.all(Tok.space12),
+                    onTap: state is HealthSyncing ? null : onSyncTap,
+                    child: state is HealthSyncing
+                        ? GlassLoadingSpinner(
+                            size: 16,
+                            color: Tok.neonAccent,
                           )
-                        : const Icon(
+                        : Icon(
                             Icons.sensors_outlined,
                             size: 18,
-                            color: RecovaColors.monochromeWhite,
+                            color: Tok.neonAccent,
                           ),
                   );
                 },
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Tok.space20),
 
-          // ── Signature Biometric Recovery Gauge (Clickable to Calculation Page) ──
+          // ── Recovery Gauge ──
           RadialScoreGauge(
             score: summary?.recoveryScore,
             size: 210,
             onTap: () => _openRecoveryCalculation(context),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: Tok.space24),
 
           // ── Quick Vital Metrics ──
           Row(
@@ -208,13 +209,13 @@ class PulseScreen extends StatelessWidget {
                       ? 'Within range'
                       : 'Awaiting log',
                   deltaColor: summary?.hrvMs != null
-                      ? RecovaColors.textSecondary
-                      : RecovaColors.textMuted,
+                      ? Tok.textSecondary
+                      : Tok.textMuted,
                   icon: Icons.monitor_heart_outlined,
                   onTap: () => _openHrvDetail(context),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: Tok.space8),
               Expanded(
                 child: VitalMetricTile(
                   label: 'RESTING HR',
@@ -228,7 +229,7 @@ class PulseScreen extends StatelessWidget {
                   onTap: () => _openRestingHrDetail(context),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: Tok.space8),
               Expanded(
                 child: VitalMetricTile(
                   label: 'BLOOD O2',
@@ -244,9 +245,9 @@ class PulseScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Tok.space16),
 
-          // ── Full-Width Sleep Architecture Bento (Replaces Split Day Strain Pod) ──
+          // ── Sleep Architecture ──
           SleepPerformanceCard(
             sleepHours: summary?.sleepHours,
             baselineSleepHours: summary?.baselineSleepHours,
@@ -254,9 +255,9 @@ class PulseScreen extends StatelessWidget {
             sleepSessions: summary?.sleepSessions ?? const [],
             onTap: () => _openSleepArchitectureDetail(context),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Tok.space16),
 
-          // ── Daily Movement & Energy Expenditure (Replaces ECG Waveform) ──
+          // ── Daily Activity ──
           DailyActivityPod(
             todaySteps: summary?.todaySteps,
             activeCalories: summary?.activeCalories,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/design_tokens.dart';
 import '../../core/theme/recova_colors.dart';
+import 'glass_card.dart';
 
 class CoachInsightCard extends StatelessWidget {
   final double? recoveryScore;
@@ -37,13 +39,7 @@ class CoachInsightCard extends StatelessWidget {
       optimalWindow = 'ACTIVE RECOVERY & HYDRATION ONLY';
     }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: RecovaColors.surfaceElevation1,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: RecovaColors.borderSubtle),
-      ),
+    return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -52,42 +48,31 @@ class CoachInsightCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
-                children: const [
+                children: [
                   Icon(Icons.psychology_outlined,
-                      size: 15, color: RecovaColors.monochromeWhite),
-                  SizedBox(width: 8),
+                      size: 15, color: Tok.neonAccent),
+                  const SizedBox(width: Tok.space8),
                   Text(
                     'COACH INSIGHT',
-                    style: TextStyle(
+                    style: TokType.cardTitle.copyWith(
                       fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
                       letterSpacing: 1.4,
-                      color: RecovaColors.textPrimary,
                     ),
                   ),
                 ],
               ),
-              const Text(
+              Text(
                 'AUTONOMIC AI',
-                style: TextStyle(
-                  fontSize: 8.5,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                  color: RecovaColors.textTertiary,
-                ),
+                style: TokType.caption,
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: Tok.space12),
 
           // Insight Narrative
           RichText(
             text: TextSpan(
-              style: const TextStyle(
-                fontSize: 13,
-                height: 1.5,
-                color: RecovaColors.textSecondary,
-              ),
+              style: TokType.body,
               children: [
                 TextSpan(text: insightText),
                 TextSpan(
@@ -102,13 +87,15 @@ class CoachInsightCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Tok.space12),
 
           // Footer Window
           Container(
-            padding: const EdgeInsets.only(top: 10),
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: RecovaColors.borderSubtle)),
+            padding: const EdgeInsets.only(top: Tok.space12),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Tok.glassBorder),
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -121,33 +108,31 @@ class CoachInsightCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: tier.color,
+                        boxShadow: [
+                          BoxShadow(
+                            color: tier.color.withValues(alpha: 0.5),
+                            blurRadius: 6,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: Tok.space6),
                     Text(
                       optimalWindow,
-                      style: const TextStyle(
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.0,
-                        color: RecovaColors.textTertiary,
-                      ),
+                      style: TokType.caption,
                     ),
                   ],
                 ),
                 Row(
-                  children: const [
+                  children: [
                     Text(
                       'DETAILS',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.2,
-                        color: RecovaColors.textSecondary,
+                      style: TokType.caption.copyWith(
+                        color: Tok.textSecondary,
                       ),
                     ),
                     Icon(Icons.chevron_right,
-                        size: 12, color: RecovaColors.textTertiary),
+                        size: 12, color: Tok.textTertiary),
                   ],
                 ),
               ],

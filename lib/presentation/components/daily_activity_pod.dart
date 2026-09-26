@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/recova_colors.dart';
+import '../../core/theme/design_tokens.dart';
+import 'glass_card.dart';
 
 /// Daily Movement & Energy Expenditure Card.
-/// Replaces the ECG waveform with clear daily activity tracking (Steps & Calories).
+/// Glassmorphic treatment with Tok design tokens.
 class DailyActivityPod extends StatelessWidget {
   final int? todaySteps;
   final double? activeCalories;
@@ -24,157 +25,109 @@ class DailyActivityPod extends StatelessWidget {
     const stepTarget = 10000;
     final stepRatio = (steps / stepTarget).clamp(0.0, 1.0);
 
-    return GestureDetector(
-      onTap: () => _showDailyActivityDetails(context, steps, activeKcal, totalKcal, stepRatio),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: RecovaColors.surfaceElevation1,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: RecovaColors.borderSubtle),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header Row ──
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: const [
-                      Icon(Icons.directions_run,
-                          size: 14, color: RecovaColors.textTertiary),
-                      SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          'DAILY ACTIVITY & ENERGY',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.0,
-                            color: RecovaColors.textTertiary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+    return GlassCard(
+      onTap: () => _showDailyActivityDetails(
+          context, steps, activeKcal, totalKcal, stepRatio),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header Row ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
                   children: [
-                    Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: RecovaColors.surfaceElevation2,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: RecovaColors.borderSubtle),
-                      ),
+                    Icon(Icons.directions_run,
+                        size: 14, color: Tok.textTertiary),
+                    const SizedBox(width: Tok.space8),
+                    Flexible(
                       child: Text(
-                        steps > 0 ? '${(stepRatio * 100).toInt()}% GOAL' : '--',
-                        style: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.4,
-                          color: RecovaColors.monochromeWhite,
+                        'DAILY ACTIVITY & ENERGY',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TokType.caption.copyWith(
+                          letterSpacing: 1.0,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    const Icon(
-                      Icons.chevron_right,
-                      size: 14,
-                      color: RecovaColors.textTertiary,
                     ),
                   ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // ── 3 Column Activity Metrics ──
-            Row(
-              children: [
-                // Steps
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'STEPS (TODAY)',
-                        style: TextStyle(
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.8,
-                          color: RecovaColors.textTertiary,
-                        ),
+              ),
+              const SizedBox(width: Tok.space8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GlassPill(
+                    child: Text(
+                      steps > 0 ? '${(stepRatio * 100).toInt()}% GOAL' : '--',
+                      style: TokType.badge.copyWith(
+                        color: Tok.textPrimary,
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        steps > 0 ? _formatNumber(steps) : '--',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w400,
-                          letterSpacing: -0.4,
-                          color: RecovaColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      const Text(
-                        'TODAY • / 10,000',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w400,
-                          color: RecovaColors.textMuted,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
+                  const SizedBox(width: Tok.space6),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 14,
+                    color: Tok.textTertiary,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: Tok.space16),
+
+          // ── 3 Column Activity Metrics ──
+          Row(
+            children: [
+              // Steps
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('STEPS (TODAY)', style: TokType.caption),
+                    const SizedBox(height: 3),
+                    Text(
+                      steps > 0 ? _formatNumber(steps) : '--',
+                      style: TokType.metricMedium.copyWith(fontSize: 18),
+                    ),
+                    const SizedBox(height: Tok.space2),
+                    Text(
+                      'TODAY • / 10,000',
+                      style: TokType.caption.copyWith(
+                        fontWeight: FontWeight.w400,
+                        color: Tok.textMuted,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
 
               Container(
                 width: 1,
                 height: 30,
-                color: RecovaColors.borderSubtle,
+                color: Tok.glassBorder,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: Tok.space12),
 
               // Active Calories
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'ACTIVE',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.8,
-                        color: RecovaColors.textTertiary,
-                      ),
-                    ),
+                    Text('ACTIVE', style: TokType.caption),
                     const SizedBox(height: 3),
                     Text(
                       activeKcal > 0 ? '$activeKcal' : '--',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: -0.4,
-                        color: RecovaColors.textPrimary,
-                      ),
+                      style: TokType.metricMedium.copyWith(fontSize: 18),
                     ),
-                    const SizedBox(height: 2),
-                    const Text(
+                    const SizedBox(height: Tok.space2),
+                    Text(
                       'kcal',
-                      style: TextStyle(
-                        fontSize: 9.5,
+                      style: TokType.caption.copyWith(
                         fontWeight: FontWeight.w400,
-                        color: RecovaColors.textMuted,
+                        color: Tok.textMuted,
                       ),
                     ),
                   ],
@@ -184,41 +137,27 @@ class DailyActivityPod extends StatelessWidget {
               Container(
                 width: 1,
                 height: 30,
-                color: RecovaColors.borderSubtle,
+                color: Tok.glassBorder,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: Tok.space12),
 
               // Total Metabolic Burn
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'TOTAL',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.8,
-                        color: RecovaColors.textTertiary,
-                      ),
-                    ),
+                    Text('TOTAL', style: TokType.caption),
                     const SizedBox(height: 3),
                     Text(
                       totalKcal > 0 ? '$totalKcal' : '--',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: -0.4,
-                        color: RecovaColors.textPrimary,
-                      ),
+                      style: TokType.metricMedium.copyWith(fontSize: 18),
                     ),
-                    const SizedBox(height: 2),
-                    const Text(
+                    const SizedBox(height: Tok.space2),
+                    Text(
                       'kcal',
-                      style: TextStyle(
-                        fontSize: 9.5,
+                      style: TokType.caption.copyWith(
                         fontWeight: FontWeight.w400,
-                        color: RecovaColors.textMuted,
+                        color: Tok.textMuted,
                       ),
                     ),
                   ],
@@ -226,25 +165,43 @@ class DailyActivityPod extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Tok.space16),
 
-          // ── Progress Bar ──
+          // ── Progress Bar with neon accent ──
           ClipRRect(
             borderRadius: BorderRadius.circular(1.5),
-            child: LinearProgressIndicator(
-              value: stepRatio,
-              minHeight: 3.0,
-              backgroundColor: Colors.white.withValues(alpha: 0.06),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                RecovaColors.monochromeWhite,
-              ),
+            child: Stack(
+              children: [
+                Container(
+                  height: 3.0,
+                  decoration: BoxDecoration(
+                    color: Tok.glassFillRecessed,
+                    borderRadius: BorderRadius.circular(1.5),
+                  ),
+                ),
+                FractionallySizedBox(
+                  widthFactor: stepRatio,
+                  child: Container(
+                    height: 3.0,
+                    decoration: BoxDecoration(
+                      color: Tok.neonAccent,
+                      borderRadius: BorderRadius.circular(1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Tok.neonAccent.withValues(alpha: 0.4),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
 
   String _formatNumber(int number) {
     if (number >= 1000) {
@@ -263,14 +220,17 @@ class DailyActivityPod extends StatelessWidget {
   ) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: RecovaColors.surfaceElevation1,
+      backgroundColor: Tok.canvasBase,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(Tok.radiusLg)),
       ),
       builder: (ctx) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Tok.space20,
+              vertical: Tok.space20,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,162 +240,83 @@ class DailyActivityPod extends StatelessWidget {
                     width: 36,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: RecovaColors.borderMedium,
-                      borderRadius: BorderRadius.circular(2),
+                      color: Tok.glassBorderBright,
+                      borderRadius: BorderRadius.circular(Tok.space2),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: Tok.space16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'DAILY ACTIVITY TELEMETRY',
-                      style: TextStyle(
+                      style: TokType.cardTitle.copyWith(
                         fontSize: 12,
-                        fontWeight: FontWeight.w700,
                         letterSpacing: 1.2,
-                        color: RecovaColors.textPrimary,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: RecovaColors.surfaceElevation3,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: RecovaColors.borderSubtle),
-                      ),
-                      child: const Text(
+                    GlassPill(
+                      child: Text(
                         'DAY ONLY (00:00 - NOW)',
-                        style: TextStyle(
+                        style: TokType.badge.copyWith(
+                          color: Tok.textPrimary,
                           fontSize: 8.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                          color: RecovaColors.monochromeWhite,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: Tok.space16),
 
-                // Detail Bento
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: RecovaColors.surfaceElevation2,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: RecovaColors.borderSubtle),
-                  ),
+                // Detail Card
+                GlassCard(
+                  padding: const EdgeInsets.all(Tok.space16),
                   child: Column(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Pedometer Steps (Today)',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: RecovaColors.textSecondary,
-                            ),
-                          ),
-                          Text(
-                            steps > 0 ? '${_formatNumber(steps)} steps' : '--',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: RecovaColors.textPrimary,
-                            ),
-                          ),
-                        ],
+                      _detailRow(
+                        'Pedometer Steps (Today)',
+                        steps > 0 ? '${_formatNumber(steps)} steps' : '--',
+                        null,
                       ),
-                      const Divider(height: 16, color: RecovaColors.borderSubtle),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Goal Completion',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: RecovaColors.textSecondary,
-                            ),
-                          ),
-                          Text(
-                            steps > 0 ? '${(stepRatio * 100).toInt()}% of 10k target' : '--',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: RecovaColors.monochromeWhite,
-                            ),
-                          ),
-                        ],
+                      Divider(height: Tok.space16, color: Tok.glassBorder),
+                      _detailRow(
+                        'Goal Completion',
+                        steps > 0
+                            ? '${(stepRatio * 100).toInt()}% of 10k target'
+                            : '--',
+                        null,
                       ),
-                      const Divider(height: 16, color: RecovaColors.borderSubtle),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Active Energy Expenditure',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: RecovaColors.textSecondary,
-                            ),
-                          ),
-                          Text(
-                            activeKcal > 0 ? '$activeKcal kcal' : '--',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: RecovaColors.kineticAmberGold,
-                            ),
-                          ),
-                        ],
+                      Divider(height: Tok.space16, color: Tok.glassBorder),
+                      _detailRow(
+                        'Active Energy Expenditure',
+                        activeKcal > 0 ? '$activeKcal kcal' : '--',
+                        Tok.recoveryModerate,
                       ),
-                      const Divider(height: 16, color: RecovaColors.borderSubtle),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Total Caloric Burn (with BMR)',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: RecovaColors.textSecondary,
-                            ),
-                          ),
-                          Text(
-                            totalKcal > 0 ? '$totalKcal kcal' : '--',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: RecovaColors.textPrimary,
-                            ),
-                          ),
-                        ],
+                      Divider(height: Tok.space16, color: Tok.glassBorder),
+                      _detailRow(
+                        'Total Caloric Burn (with BMR)',
+                        totalKcal > 0 ? '$totalKcal kcal' : '--',
+                        null,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: Tok.space16),
 
                 // Note
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: RecovaColors.surfaceElevation2,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: RecovaColors.borderSubtle),
-                  ),
+                GlassCard(
+                  padding: const EdgeInsets.all(Tok.space12),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Icon(Icons.shield_outlined, size: 14, color: RecovaColors.textTertiary),
-                      SizedBox(width: 8),
+                    children: [
+                      Icon(Icons.shield_outlined,
+                          size: 14, color: Tok.textTertiary),
+                      const SizedBox(width: Tok.space8),
                       Expanded(
                         child: Text(
                           'Telemetry is strictly aggregated for today (from midnight to present). Multi-source overlaps (phone and watch) and weekly accumulations are de-duplicated to ensure 100% daily accuracy.',
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            color: RecovaColors.textTertiary,
+                          style: TokType.caption.copyWith(
                             height: 1.4,
                           ),
                         ),
@@ -450,5 +331,20 @@ class DailyActivityPod extends StatelessWidget {
       },
     );
   }
-}
 
+  Widget _detailRow(String label, String value, Color? valueColor) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TokType.bodySmall),
+        Text(
+          value,
+          style: TokType.bodySmall.copyWith(
+            fontWeight: FontWeight.w600,
+            color: valueColor ?? Tok.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
