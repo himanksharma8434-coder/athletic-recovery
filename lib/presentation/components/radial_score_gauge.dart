@@ -179,11 +179,15 @@ class _RadialScoreGaugeState extends State<RadialScoreGauge>
                             ),
                           ),
                           const SizedBox(width: Tok.space6),
-                          Text(
-                            tier.statusSubtitle,
-                            style: TokType.caption.copyWith(
-                              color: Tok.textSecondary,
-                              letterSpacing: 1.2,
+                          Flexible(
+                            child: Text(
+                              tier.statusSubtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TokType.caption.copyWith(
+                                color: Tok.textSecondary,
+                                letterSpacing: 0.8,
+                              ),
                             ),
                           ),
                         ],
