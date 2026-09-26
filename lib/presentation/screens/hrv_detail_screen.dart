@@ -45,8 +45,24 @@ class HrvDetailScreen extends StatefulWidget {
   State<HrvDetailScreen> createState() => _HrvDetailScreenState();
 }
 
+class _HrvCacheItem {
+  final List<_HrvDataPoint> points;
+  final double avg;
+  final double? min;
+  final double? max;
+
+  const _HrvCacheItem({
+    required this.points,
+    required this.avg,
+    this.min,
+    this.max,
+  });
+}
+
 class _HrvDetailScreenState extends State<HrvDetailScreen> {
   HrvFilter _selectedFilter = HrvFilter.sevenDays;
+
+  final Map<HrvFilter, _HrvCacheItem> _cache = {};
 
   List<_HrvDataPoint> _points = [];
   double? _averageHrv;
@@ -60,6 +76,16 @@ class _HrvDetailScreenState extends State<HrvDetailScreen> {
   }
 
   Future<void> _loadHrvData(HrvFilter filter) async {
+    if (_cache.containsKey(filter)) {
+      final cached = _cache[filter]!;
+      setState(() {
+        _points = cached.points;
+        _averageHrv = cached.avg;
+        _minHrv = cached.min;
+        _maxHrv = cached.max;
+      });
+      return;
+    }
 
     final now = DateTime.now();
     final todayStart = AppDateUtils.startOfDay(now);
@@ -182,12 +208,20 @@ class _HrvDetailScreenState extends State<HrvDetailScreen> {
         avg = sum / points.length;
       }
 
+      final item = _HrvCacheItem(
+        points: points,
+        avg: avg,
+        min: minV.isFinite ? minV : null,
+        max: maxV.isFinite ? maxV : null,
+      );
+      _cache[filter] = item;
+
       if (mounted) {
         setState(() {
           _points = points;
           _averageHrv = avg;
-          _minHrv = minV.isFinite ? minV : null;
-          _maxHrv = maxV.isFinite ? maxV : null;
+          _minHrv = item.min;
+          _maxHrv = item.max;
         });
       }
     } catch (_) {
@@ -497,7 +531,9 @@ class _HrvDetailScreenState extends State<HrvDetailScreen> {
                                   ),
                                 ),
                               )
-                            : LineChart(_buildChartData()),
+                            : RepaintBoundary(
+                                child: LineChart(_buildChartData()),
+                              ),
                       ),
                     ),
                   ],
