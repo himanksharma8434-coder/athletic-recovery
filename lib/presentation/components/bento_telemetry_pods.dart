@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/recova_colors.dart';
+import '../../core/theme/design_tokens.dart';
 import '../../domain/repositories/health_source_repository.dart';
+import 'glass_card.dart';
 
 class BentoTelemetryPods extends StatelessWidget {
   final double? dayStrain;
@@ -27,7 +28,6 @@ class BentoTelemetryPods extends StatelessWidget {
     final sleepH = sleep.floor();
     final sleepM = ((sleep - sleepH) * 60).round();
 
-    // Calculate real sleep performance vs baseline (e.g. 7-8h or user baseline)
     final baselineH = baselineSleepHours ?? 8.0;
     final sleepPerf = hasSleep && baselineH > 0
         ? ((sleep / baselineH) * 100).clamp(0, 150).round()
@@ -37,69 +37,55 @@ class BentoTelemetryPods extends StatelessWidget {
       children: [
         // ── Day Strain Pod ──
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: RecovaColors.surfaceElevation1,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: RecovaColors.borderSubtle),
-            ),
+          child: GlassCard(
+            padding: const EdgeInsets.all(Tok.space16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
+                  children: [
                     Row(
                       children: [
                         Icon(Icons.bolt,
-                            size: 14, color: RecovaColors.monochromeWhite),
-                        SizedBox(width: 4),
+                            size: 14, color: Tok.recoveryModerate),
+                        const SizedBox(width: Tok.space4),
                         Text(
                           'DAY STRAIN',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
+                          style: TokType.caption.copyWith(
                             letterSpacing: 1.2,
-                            color: RecovaColors.textTertiary,
                           ),
                         ),
                       ],
                     ),
                     Text(
                       'MAX 21',
-                      style: TextStyle(
+                      style: TokType.caption.copyWith(
+                        color: Tok.textMuted,
                         fontSize: 8.5,
-                        color: RecovaColors.textMuted,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: Tok.space12),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
                       hasStrain ? strain.toStringAsFixed(1) : '--',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: -0.5,
-                        color: RecovaColors.textPrimary,
-                      ),
+                      style: TokType.metricLarge.copyWith(fontSize: 24),
                     ),
-                    const SizedBox(width: 4),
-                    const Text(
+                    const SizedBox(width: Tok.space4),
+                    Text(
                       '/ 21.0',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: RecovaColors.textMuted,
+                      style: TokType.bodySmall.copyWith(
+                        color: Tok.textMuted,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: Tok.space4),
                 Text(
                   hasStrain
                       ? (strain >= 14
@@ -108,24 +94,19 @@ class BentoTelemetryPods extends StatelessWidget {
                               ? 'MODERATE LOAD'
                               : 'LIGHT LOAD')
                       : 'NO LOAD RECORDED',
-                  style: TextStyle(
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.8,
-                    color: hasStrain
-                        ? RecovaColors.textSecondary
-                        : RecovaColors.textMuted,
+                  style: TokType.caption.copyWith(
+                    color: hasStrain ? Tok.textSecondary : Tok.textMuted,
                   ),
                 ),
-                const SizedBox(height: 12),
-                // Monochrome Progress Bar
+                const SizedBox(height: Tok.space12),
+                // Progress Bar with accent glow
                 Stack(
                   children: [
                     Container(
                       height: 3.5,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(2),
+                        color: Tok.glassFillRecessed,
+                        borderRadius: BorderRadius.circular(Tok.space2),
                       ),
                     ),
                     FractionallySizedBox(
@@ -133,8 +114,15 @@ class BentoTelemetryPods extends StatelessWidget {
                       child: Container(
                         height: 3.5,
                         decoration: BoxDecoration(
-                          color: RecovaColors.monochromeWhite,
-                          borderRadius: BorderRadius.circular(2),
+                          color: Tok.recoveryModerate,
+                          borderRadius: BorderRadius.circular(Tok.space2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Tok.recoveryModerate
+                                  .withValues(alpha: 0.4),
+                              blurRadius: 4,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -144,17 +132,12 @@ class BentoTelemetryPods extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: Tok.space12),
 
         // ── Sleep Architecture Pod ──
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: RecovaColors.surfaceElevation1,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: RecovaColors.borderSubtle),
-            ),
+          child: GlassCard(
+            padding: const EdgeInsets.all(Tok.space16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -162,113 +145,96 @@ class BentoTelemetryPods extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
-                      children: const [
+                      children: [
                         Icon(Icons.bedtime,
-                            size: 14, color: RecovaColors.monochromeSilver),
-                        SizedBox(width: 4),
+                            size: 14, color: Tok.accentBlue),
+                        const SizedBox(width: Tok.space4),
                         Text(
                           'SLEEP',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
+                          style: TokType.caption.copyWith(
                             letterSpacing: 1.2,
-                            color: RecovaColors.textTertiary,
                           ),
                         ),
                       ],
                     ),
                     Text(
                       sleepPerf != null ? '$sleepPerf% PERF' : '--',
-                      style: const TextStyle(
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.w600,
-                        color: RecovaColors.textSecondary,
+                      style: TokType.caption.copyWith(
+                        color: Tok.textSecondary,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: Tok.space12),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
                       hasSleep ? '${sleepH}h' : '--',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: -0.5,
-                        color: RecovaColors.textPrimary,
-                      ),
+                      style: TokType.metricLarge.copyWith(fontSize: 24),
                     ),
                     if (hasSleep) ...[
-                      const SizedBox(width: 4),
+                      const SizedBox(width: Tok.space4),
                       Text(
                         '${sleepM}m',
-                        style: const TextStyle(
+                        style: TokType.metricMedium.copyWith(
                           fontSize: 15,
                           fontWeight: FontWeight.w300,
-                          color: RecovaColors.textSecondary,
+                          color: Tok.textSecondary,
                         ),
                       ),
                     ],
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: Tok.space4),
                 Text(
                   hasSleep
                       ? (sleep >= baselineH
                           ? 'BASELINE MET'
                           : 'SLEEP DEFICIT')
                       : 'AWAITING SLEEP LOG',
-                  style: TextStyle(
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.8,
-                    color: hasSleep
-                        ? RecovaColors.textSecondary
-                        : RecovaColors.textMuted,
+                  style: TokType.caption.copyWith(
+                    color: hasSleep ? Tok.textSecondary : Tok.textMuted,
                   ),
                 ),
-                const SizedBox(height: 12),
-                // Monochrome Stage breakdown
+                const SizedBox(height: Tok.space12),
+                // Stage breakdown
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(Tok.space2),
                   child: SizedBox(
                     height: 3.5,
-                    child: (sleepStages != null && sleepStages!.hasStageData)
+                    child: (sleepStages != null &&
+                            sleepStages!.hasStageData)
                         ? Row(
                             children: [
                               if (sleepStages!.deepMinutes > 0)
                                 Expanded(
                                   flex: sleepStages!.deepMinutes,
-                                  child: Container(
-                                      color: RecovaColors.monochromeWhite),
+                                  child: Container(color: Tok.neonAccent),
                                 ),
                               if (sleepStages!.remMinutes > 0)
                                 Expanded(
                                   flex: sleepStages!.remMinutes,
-                                  child: Container(
-                                      color: RecovaColors.monochromeSilver),
+                                  child: Container(color: Tok.accentBlue),
                                 ),
                               if (sleepStages!.lightMinutes > 0)
                                 Expanded(
                                   flex: sleepStages!.lightMinutes,
-                                  child: Container(
-                                      color: RecovaColors.monochromeGray),
+                                  child: Container(color: Tok.textTertiary),
                                 ),
                               if (sleepStages!.awakeMinutes > 0)
                                 Expanded(
                                   flex: sleepStages!.awakeMinutes,
                                   child: Container(
-                                      color: RecovaColors.nothingRed),
+                                      color: Tok.recoverySuppressed),
                                 ),
                             ],
                           )
                         : Container(
                             color: hasSleep
-                                ? RecovaColors.monochromeSilver
-                                : Colors.white.withValues(alpha: 0.08),
+                                ? Tok.textTertiary
+                                : Tok.glassFillRecessed,
                           ),
                   ),
                 ),
