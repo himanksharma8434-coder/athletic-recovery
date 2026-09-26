@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../core/theme/design_tokens.dart';
 
@@ -32,67 +31,42 @@ class GlassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final fillColor = elevated ? Tok.glassFillElevated : Tok.glassFill;
 
-    Widget card = ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: Tok.glassBlurSigma,
-          sigmaY: Tok.glassBlurSigma,
+    Widget card = Container(
+      width: width,
+      padding: padding,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(borderRadius),
+        color: fillColor,
+        border: Border.all(
+          color: elevated ? Tok.glassBorderBright : Tok.glassBorder,
+          width: 0.5,
         ),
-        child: Container(
-          width: width,
-          padding: padding,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(borderRadius),
-            color: fillColor,
-            // Specular highlight: brighter border on top edge, standard on others
-            border: Border(
-              top: BorderSide(
-                color: Tok.glassBorderBright,
-                width: 0.5,
-              ),
-              left: BorderSide(
-                color: Tok.glassBorder.withValues(alpha: 0.12),
-                width: 0.5,
-              ),
-              right: BorderSide(
-                color: Tok.glassBorder.withValues(alpha: 0.08),
-                width: 0.5,
-              ),
-              bottom: BorderSide(
-                color: Tok.glassBorder.withValues(alpha: 0.05),
-                width: 0.5,
-              ),
-            ),
-            // Subtle gradient overlay for liquid glass feel
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: 0.06),
-                Colors.white.withValues(alpha: 0.01),
-                Colors.transparent,
-              ],
-              stops: const [0.0, 0.3, 1.0],
-            ),
-            boxShadow: [
-              // Outer glow (faint, replaces Material elevation shadow)
-              BoxShadow(
-                color: accentGlow ?? Tok.glassGlow,
-                blurRadius: accentGlow != null ? 20 : 12,
-                spreadRadius: accentGlow != null ? 1 : 0,
-              ),
-              // Soft dark shadow for depth
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.05),
+            Colors.white.withValues(alpha: 0.01),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.3, 1.0],
+        ),
+        boxShadow: [
+          // Outer glow (faint, replaces Material elevation shadow)
+          BoxShadow(
+            color: accentGlow ?? Tok.glassGlow,
+            blurRadius: accentGlow != null ? 20 : 12,
+            spreadRadius: accentGlow != null ? 1 : 0,
           ),
-          child: child,
-        ),
+          // Soft dark shadow for depth
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
+      child: child,
     );
 
     if (onTap != null) {
@@ -125,26 +99,17 @@ class GlassCardLight extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget card = ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: Tok.glassBlurSigmaLight,
-          sigmaY: Tok.glassBlurSigmaLight,
-        ),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(borderRadius),
-            color: Tok.glassFillRecessed,
-            border: Border.all(
-              color: Tok.glassBorder.withValues(alpha: 0.08),
-              width: 0.5,
-            ),
-          ),
-          child: child,
+    Widget card = Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(borderRadius),
+        color: Tok.glassFillRecessed,
+        border: Border.all(
+          color: Tok.glassBorder.withValues(alpha: 0.08),
+          width: 0.5,
         ),
       ),
+      child: child,
     );
 
     if (onTap != null) {
