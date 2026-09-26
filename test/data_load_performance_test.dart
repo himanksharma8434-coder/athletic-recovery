@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:health/health.dart';
 import 'package:whoop/data/database/app_database.dart';
 import 'package:whoop/data/datasources/health_platform_datasource.dart';
 import 'package:whoop/data/repositories/health_repository_impl.dart';
@@ -14,6 +15,9 @@ import 'package:whoop/presentation/cubits/health_sync/health_sync_state.dart';
 class MockPlatform extends HealthPlatformDatasource {
   @override
   Future<void> configure() async {}
+
+  @override
+  List<HealthDataType> getAvailableTypes() => [];
 
   @override
   Future<DateTime?> fetchDateOfBirth() async => null;
