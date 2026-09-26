@@ -45,9 +45,25 @@ class BloodO2DetailScreen extends StatefulWidget {
   State<BloodO2DetailScreen> createState() => _BloodO2DetailScreenState();
 }
 
+class _Spo2CacheItem {
+  final List<_Spo2DataPoint> points;
+  final double avg;
+  final double? min;
+  final double? max;
+
+  const _Spo2CacheItem({
+    required this.points,
+    required this.avg,
+    this.min,
+    this.max,
+  });
+}
+
 class _BloodO2DetailScreenState extends State<BloodO2DetailScreen> {
   BloodO2Filter _selectedFilter = BloodO2Filter.today;
   bool _isLoading = false;
+
+  final Map<BloodO2Filter, _Spo2CacheItem> _cache = {};
 
   List<_Spo2DataPoint> _points = [];
   double? _averageSpo2;
@@ -62,6 +78,19 @@ class _BloodO2DetailScreenState extends State<BloodO2DetailScreen> {
   }
 
   Future<void> _loadSpo2Data(BloodO2Filter filter) async {
+    if (_cache.containsKey(filter)) {
+      final cached = _cache[filter]!;
+      setState(() {
+        _previousAverageSpo2 = _averageSpo2;
+        _points = cached.points;
+        _averageSpo2 = cached.avg;
+        _minSpo2 = cached.min;
+        _maxSpo2 = cached.max;
+        _isLoading = false;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -205,13 +234,21 @@ class _BloodO2DetailScreenState extends State<BloodO2DetailScreen> {
         avg = sum / points.length;
       }
 
+      final item = _Spo2CacheItem(
+        points: points,
+        avg: avg,
+        min: minV.isFinite ? minV : null,
+        max: maxV.isFinite ? maxV : null,
+      );
+      _cache[filter] = item;
+
       if (mounted) {
         setState(() {
           _previousAverageSpo2 = _averageSpo2;
           _points = points;
           _averageSpo2 = avg;
-          _minSpo2 = minV.isFinite ? minV : null;
-          _maxSpo2 = maxV.isFinite ? maxV : null;
+          _minSpo2 = item.min;
+          _maxSpo2 = item.max;
           _isLoading = false;
         });
       }
@@ -635,10 +672,12 @@ class _BloodO2DetailScreenState extends State<BloodO2DetailScreen> {
                                   ),
                                 ),
                               )
-                            : LineChart(
-                                _buildChartData(),
-                                duration: const Duration(milliseconds: 450),
-                                curve: Curves.easeInOutCubic,
+                            : RepaintBoundary(
+                                child: LineChart(
+                                  _buildChartData(),
+                                  duration: const Duration(milliseconds: 450),
+                                  curve: Curves.easeInOutCubic,
+                                ),
                               ),
                       ),
                     ),

@@ -42,6 +42,10 @@ class DashboardCubit extends Cubit<DashboardState> {
       _subscription = repository.watchLatestSummary().listen(
         (summary) {
           if (summary != null) {
+            if (state is DashboardLoaded &&
+                (state as DashboardLoaded).summary == summary) {
+              return;
+            }
             emit(DashboardLoaded(summary: summary));
           }
         },
