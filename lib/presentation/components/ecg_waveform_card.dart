@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/recova_colors.dart';
+import '../../core/theme/design_tokens.dart';
+import 'glass_card.dart';
 
 class EcgWaveformCard extends StatelessWidget {
   final double? restingHr;
@@ -19,27 +20,16 @@ class EcgWaveformCard extends StatelessWidget {
     final hasRpm = respirationRate != null && respirationRate! > 0;
     final rpmText = hasRpm ? respirationRate!.toStringAsFixed(1) : '--';
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: RecovaColors.surfaceElevation1,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: RecovaColors.borderSubtle),
-      ),
+    return GlassCard(
       child: Column(
         children: [
           // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'BIOMETRIC TELEMETRY',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                  color: RecovaColors.textTertiary,
-                ),
+                style: TokType.caption.copyWith(letterSpacing: 1.2),
               ),
               Row(
                 children: [
@@ -48,28 +38,29 @@ class EcgWaveformCard extends StatelessWidget {
                     height: 5,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: hasHr
-                          ? RecovaColors.nothingRed
-                          : RecovaColors.textMuted,
+                      color: hasHr ? Tok.neonAccent : Tok.textMuted,
+                      boxShadow: hasHr
+                          ? [
+                              BoxShadow(
+                                color: Tok.neonAccent.withValues(alpha: 0.5),
+                                blurRadius: 6,
+                              ),
+                            ]
+                          : [],
                     ),
                   ),
                   const SizedBox(width: 5),
                   Text(
                     hasHr ? 'HEALTH CONNECT LIVE' : 'SENSOR STANDBY',
-                    style: TextStyle(
-                      fontSize: 8.5,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.8,
-                      color: hasHr
-                          ? RecovaColors.textSecondary
-                          : RecovaColors.textMuted,
+                    style: TokType.caption.copyWith(
+                      color: hasHr ? Tok.textSecondary : Tok.textMuted,
                     ),
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Tok.space12),
 
           // Vascular HR with Waveform
           Row(
@@ -81,17 +72,20 @@ class EcgWaveformCard extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: RecovaColors.surfaceElevation3,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: RecovaColors.borderSubtle),
+                      color: Tok.glassFillRecessed,
+                      borderRadius: BorderRadius.circular(Tok.radiusSm),
+                      border: Border.all(
+                        color: hasHr
+                            ? Tok.glassBorderBright
+                            : Tok.glassBorder,
+                        width: 0.5,
+                      ),
                     ),
                     child: Icon(Icons.favorite_outline,
                         size: 15,
-                        color: hasHr
-                            ? RecovaColors.monochromeWhite
-                            : RecovaColors.textMuted),
+                        color: hasHr ? Tok.neonAccent : Tok.textMuted),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: Tok.space12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -99,39 +93,25 @@ class EcgWaveformCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
                         children: [
-                          Text(
-                            hrText,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.5,
-                              color: RecovaColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'BPM',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w500,
-                              color: RecovaColors.textTertiary,
-                            ),
-                          ),
+                          Text(hrText,
+                              style: TokType.metricMedium
+                                  .copyWith(fontWeight: FontWeight.w600)),
+                          const SizedBox(width: Tok.space4),
+                          Text('BPM', style: TokType.unit.copyWith(fontSize: 9)),
                         ],
                       ),
                       Text(
                         hasHr ? 'RESTING VASCULAR' : 'NO PULSE LOGGED',
-                        style: const TextStyle(
+                        style: TokType.caption.copyWith(
                           fontSize: 8,
-                          letterSpacing: 0.8,
-                          color: RecovaColors.textMuted,
+                          color: Tok.textMuted,
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-              // ECG Sparkline Waveform Painter
+              // ECG Sparkline
               SizedBox(
                 width: 110,
                 height: 28,
@@ -141,9 +121,9 @@ class EcgWaveformCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          const Divider(height: 1, color: RecovaColors.borderSubtle),
-          const SizedBox(height: 10),
+          const SizedBox(height: Tok.space12),
+          Divider(height: 1, color: Tok.glassBorder),
+          const SizedBox(height: Tok.space12),
 
           // Respiration Cycle
           Row(
@@ -155,17 +135,18 @@ class EcgWaveformCard extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: RecovaColors.surfaceElevation3,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: RecovaColors.borderSubtle),
+                      color: Tok.glassFillRecessed,
+                      borderRadius: BorderRadius.circular(Tok.radiusSm),
+                      border: Border.all(
+                        color: Tok.glassBorder,
+                        width: 0.5,
+                      ),
                     ),
                     child: Icon(Icons.air,
                         size: 15,
-                        color: hasRpm
-                            ? RecovaColors.monochromeSilver
-                            : RecovaColors.textMuted),
+                        color: hasRpm ? Tok.accentBlue : Tok.textMuted),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: Tok.space12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -173,57 +154,30 @@ class EcgWaveformCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
                         children: [
-                          Text(
-                            rpmText,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.5,
-                              color: RecovaColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'RPM',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w500,
-                              color: RecovaColors.textTertiary,
-                            ),
-                          ),
+                          Text(rpmText,
+                              style: TokType.metricMedium
+                                  .copyWith(fontWeight: FontWeight.w600)),
+                          const SizedBox(width: Tok.space4),
+                          Text('RPM', style: TokType.unit.copyWith(fontSize: 9)),
                         ],
                       ),
                       Text(
                         hasRpm ? 'RESPIRATION CYCLE' : 'NO RESPIRATION LOGGED',
-                        style: const TextStyle(
+                        style: TokType.caption.copyWith(
                           fontSize: 8,
-                          letterSpacing: 0.8,
-                          color: RecovaColors.textMuted,
+                          color: Tok.textMuted,
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: RecovaColors.surfaceElevation3,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: hasRpm
-                          ? RecovaColors.borderMedium
-                          : RecovaColors.borderSubtle),
-                ),
+              GlassPill(
+                accentColor: hasRpm ? Tok.accentBlue : null,
                 child: Text(
                   hasRpm ? 'IN RANGE' : 'AWAITING SYNC',
-                  style: TextStyle(
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.8,
-                    color: hasRpm
-                        ? RecovaColors.textPrimary
-                        : RecovaColors.textMuted,
+                  style: TokType.badge.copyWith(
+                    color: hasRpm ? Tok.textPrimary : Tok.textMuted,
                   ),
                 ),
               ),
@@ -244,7 +198,7 @@ class _EcgSparklinePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = active
-          ? RecovaColors.monochromeWhite
+          ? Tok.neonAccent
           : Colors.white.withValues(alpha: 0.15)
       ..strokeWidth = 1.6
       ..style = PaintingStyle.stroke
@@ -255,7 +209,6 @@ class _EcgSparklinePainter extends CustomPainter {
     final midY = size.height / 2;
 
     if (!active) {
-      // Flat line when inactive
       path.moveTo(0, midY);
       path.lineTo(size.width, midY);
       canvas.drawPath(path, paint);
@@ -264,22 +217,28 @@ class _EcgSparklinePainter extends CustomPainter {
 
     path.moveTo(0, midY);
     path.lineTo(size.width * 0.25, midY);
-    // P wave
     path.lineTo(size.width * 0.32, midY - 3);
     path.lineTo(size.width * 0.38, midY);
-    // Q wave
     path.lineTo(size.width * 0.45, midY + 2);
-    // R spike
     path.lineTo(size.width * 0.52, 2);
-    // S dip
     path.lineTo(size.width * 0.58, size.height - 2);
-    // T wave
     path.lineTo(size.width * 0.65, midY);
     path.lineTo(size.width * 0.75, midY - 4);
     path.lineTo(size.width * 0.82, midY);
     path.lineTo(size.width, midY);
 
     canvas.drawPath(path, paint);
+
+    // Glow effect for the ECG line when active
+    final glowPaint = Paint()
+      ..color = Tok.neonAccent.withValues(alpha: 0.2)
+      ..strokeWidth = 4
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+
+    canvas.drawPath(path, glowPaint);
   }
 
   @override

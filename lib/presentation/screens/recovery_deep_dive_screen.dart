@@ -105,8 +105,8 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
         _latest = cached.latest;
         _min = cached.minVal;
         _max = cached.maxVal;
-        if (cached.hrMax != null) _calcHrMax = cached.hrMax!;
-        if (cached.hrRest != null) _calcHrRest = cached.hrRest!;
+        _calcHrMax = cached.hrMax ?? 183.0;
+        _calcHrRest = cached.hrRest ?? widget.summary?.baselineRestingHr ?? widget.summary?.restingHr ?? 60.2;
         _loading = false;
       });
       return;
@@ -230,8 +230,8 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
           _latest = latest;
           _min = minVal;
           _max = maxVal;
-          if (hrMax != null) _calcHrMax = hrMax;
-          if (hrRest != null) _calcHrRest = hrRest;
+          _calcHrMax = hrMax ?? 183.0;
+          _calcHrRest = hrRest ?? widget.summary?.baselineRestingHr ?? widget.summary?.restingHr ?? 60.2;
           _loading = false;
         });
       }
@@ -941,7 +941,7 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
           color: RecovaColors.surfaceElevation2,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: RecovaColors.recoveryEmerald.withOpacity(0.4),
+            color: RecovaColors.recoveryEmerald.withValues(alpha: 0.4),
             width: 1.2,
           ),
         ),
@@ -977,10 +977,10 @@ class _RecoveryDeepDiveScreenState extends State<RecoveryDeepDiveScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: RecovaColors.recoveryEmerald.withOpacity(0.15),
+                    color: RecovaColors.recoveryEmerald.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: RecovaColors.recoveryEmerald.withOpacity(0.3),
+                      color: RecovaColors.recoveryEmerald.withValues(alpha: 0.3),
                     ),
                   ),
                   child: const Text(
