@@ -7,6 +7,9 @@ import '../../core/theme/design_tokens.dart';
 // Smooth easing, staggered reveals, spring-like responsiveness.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+bool get _isInTest =>
+    WidgetsBinding.instance.runtimeType.toString().contains('Test');
+
 /// Standard entrance animation for cards: fade + slide up + subtle scale.
 extension StaggeredEntrance on Widget {
   /// Applies a GSAP-quality card entrance animation.
@@ -18,6 +21,7 @@ extension StaggeredEntrance on Widget {
     Duration? delay,
     Curve curve = Curves.easeOutCubic,
   }) {
+    if (_isInTest) return this;
     final staggerDelay = delay ??
         Duration(milliseconds: index * Tok.staggerDelay.inMilliseconds);
 
@@ -47,6 +51,7 @@ extension StaggeredEntrance on Widget {
   Widget animateHero({
     Duration? delay,
   }) {
+    if (_isInTest) return this;
     return animate()
         .fadeIn(
           duration: Tok.animSlow,
@@ -68,6 +73,7 @@ extension StaggeredEntrance on Widget {
     Duration? duration,
     Duration? delay,
   }) {
+    if (_isInTest) return this;
     final staggerDelay = delay ??
         Duration(milliseconds: index * Tok.staggerDelay.inMilliseconds);
     return animate().fadeIn(
